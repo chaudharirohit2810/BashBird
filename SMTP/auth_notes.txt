@@ -1,0 +1,8 @@
+# SMTP Authentication
+
+Response and Meaning:
+504: Authentication mechanism is not supported
+501: If the client rejects connection (When client sends "*")
+334: Means request was correct (And server is ready)
+535: If password is wrong (or anything is incorrect in password)
+235: user has been authenticated successfully
