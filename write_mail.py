@@ -1,4 +1,4 @@
-import curses
+import curses, textwrap
 from curses.textpad import Textbox, rectangle
 
 
@@ -95,13 +95,35 @@ class Write_Mail_UI:
         # Subject part of UI
         rectangle(self.__stdscr, from_start + from_block_total, 0, from_start + from_block_total + subject_lines, w - 1)
         self.__stdscr.addstr(from_start + from_block_total, 2, " SUBJECT ")
-        self.__stdscr.addstr(from_start + from_block_total + 1, 2, self.__subject)
+
+        # used to divide subject in multiple lines
+        wrapper = textwrap.TextWrapper(width=w - 3)
+        elipsize = "....."
+        subject_arr = wrapper.wrap(self.__subject)
+        # show the wrapped text
+        for index, subject in enumerate(subject_arr):
+            if index == 2:
+                # If there are more than 3 lines then add elipsize
+                subject = subject[0:w - 10] + elipsize
+                self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
+                break
+            self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
             
 
         # Body part of UI
         rectangle(self.__stdscr, from_block_total + from_start + subject_lines + 1, 0, h - 5, w - 1)
         self.__stdscr.addstr(from_block_total + from_start + subject_lines + 1, 2, " BODY ")
-        self.__stdscr.addstr(14, 1, self.__body)
+
+        # Divide body into parts
+        body_arr = wrapper.wrap(self.__body)
+        max_lines = (h - 5) - (from_block_total + from_start + subject_lines + 1) - 2
+        for index, body in enumerate(body_arr):
+            # ellipsize the text if it can't be fit into the box
+            if index == max_lines:
+                body = body[0:w-10] + elipsize
+                self.__stdscr.addstr(13 + index, 1, body)
+                break
+            self.__stdscr.addstr(13 + index, 1, body)
 
 
 

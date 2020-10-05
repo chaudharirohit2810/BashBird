@@ -2,6 +2,7 @@ import curses
 import time
 from menu import Menu
 from write_mail import Write_Mail_UI
+from show_folders import Show_Folders
 
 '''Temporary function to check if passing function to dictionary is working'''
 def temp(stdscr):
@@ -25,7 +26,7 @@ def temp(stdscr):
     while key != curses.KEY_BACKSPACE:
         key = stdscr.getch()
 
-
+# TODO: Solve responsiveness issues
 def show_main_intro(stdscr):
     title1 = "**************************************************"
     title2 = "***  TERMEMAIL - TERMINAL BASED EMAIL CLIENT!  ***"
@@ -68,12 +69,13 @@ def show_main_intro(stdscr):
 def main(stdscr):
     curses.curs_set(0)
     show_main_intro(stdscr)
-    menu_strings = ["Show email", "Logout", "Exit"]
+    menu_strings = [ "Logout", "Exit"]
     menu = [{'title': "Write mail", 'Function': Write_Mail_UI}]
+    menu.append({'title': "Show mail", 'Function': Show_Folders})
     for item in menu_strings:
         # Alert: Function will expect first arguement as stdscr for sure
         menu.append({'title': item, 'Function': temp})
-    Menu(stdscr, menu)
+    Menu(stdscr, menu, "Main menu")
 
 
 

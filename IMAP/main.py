@@ -117,8 +117,6 @@ class IMAP:
         # Check if second element of tokens is OK if not raise exception
         if imap_msg_tokens[1] != "OK":
             raise Exception("Invalid username or password")
-        else:
-            print("Authentication Successful")
 
 
 
@@ -142,7 +140,13 @@ class IMAP:
         folders = []
         for item in folders_imap:
             # Remove the starting message of imap server which contains "LIST"
-            folders.append(item[7:])
+            tokens = item.split(" ")
+            index = tokens.index('"/"')
+            name = ""
+            for i in range(index + 1, len(tokens)):
+                name += tokens[i]
+            if name != '"[Gmail]"':
+                folders.append(name)
 
         # TODO: Check the response correctly
 
