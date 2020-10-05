@@ -5,6 +5,13 @@ import os
 from email.base64mime import body_encode as encode_64
 import email as email_lib
 
+'''Class which does all the part of SMTP Protocol'''
+# Functions        Functionality
+#-----------------------------------------------------------------------------------------------------------
+# Constructor      Logs in to the imap server using provided email and pasword
+# get_mailboxes    Gets all the mailboxes available for user.
+# select_mailbox   Selects particular mailbox to use 
+# fetch_email      Fetches emails for selected mailbox
 
 class IMAP:
     
@@ -21,7 +28,7 @@ class IMAP:
     __AUTH_MSG = "a01 LOGIN" # Authentication message
     __MAIL_NEW_LINE = "\r\n"
 
-    # TODO: Use different ports for different hosts
+    # TODO: Create a dictionary of imap servers and port numbers
     __SSL_PORT = 993 # Port for gmail imap server
     __HOST = ''
     __TIMEOUT = 15 # 15 seconds for now
@@ -148,13 +155,14 @@ class IMAP:
             if name != '"[Gmail]"':
                 folders.append(name)
 
-        # TODO: Check the response correctly
 
         # Return list of folders except last attribute
         return {self.__success: True, 'folders': folders}
 
     
     '''To select particular main box'''
+    # Arguements:
+    # name      Name of mailbox
     def select_mailbox(self, name):
         send = 'a02 SELECT "{folder_name}"'.format(folder_name = name)
         code, msg = self.__send_encoded_msg(send)
@@ -176,7 +184,10 @@ class IMAP:
             return {self.__success: True, 'msg': "Mailbox Selected", 'number_of_mails': number_of_mails}
 
     
-    '''To fetch email'''
+    '''To fetch email from selected mailbox'''
+    # Arguements:
+    # Start     Start index of email
+    # count     Count of the emails to fetch
     # TODO: Later implement for multiple emails
     # Alert: For now only works for one email
     def fetch_email(self, start, count = 0):
@@ -191,11 +202,6 @@ class IMAP:
             return {self.__success: False, 'msg': "Failed to fetch email! Please try again"}
         
     
-
-
-
-        
-
 
 
     # <-----------------------------------------------Utils----------------------------------------------------->
@@ -274,6 +280,7 @@ class IMAP:
         
         return raw
     
+
     '''To get body of mail'''
     # Arguements: 
     # email_obj     The email object

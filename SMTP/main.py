@@ -8,9 +8,8 @@ from email.base64mime import body_encode as encode_64
 '''Class which does all the part of SMTP Protocol'''
 # Public Functions     Functionality
 #---------------------------------------------------------------------------------------------------------------
-# Constructor          Required arguements: email and password, Default: smtp_server = 'smtp.gmail.com', debug = False
+# Constructor          Logins to smtp server using provided email and password
 # send_email           Sends mail to mail server
-#                      Required arguements: mail_to: Receiver mail, subject: subject of mail, data: body of mail
 
 class SEND_MAIL:
 
