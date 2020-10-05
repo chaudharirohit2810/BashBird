@@ -131,4 +131,5 @@ def main(stdscr):
         menu.append({'title': item, 'Function': temp})
     Menu(stdscr, menu)
 
-curses.wrapper(main)
+if __name__ == "__main__":
+    curses.wrapper(main)
