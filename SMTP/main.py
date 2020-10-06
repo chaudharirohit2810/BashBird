@@ -56,7 +56,6 @@ class SEND_MAIL:
     # smtp_server : Smtp hostname of server. Default: smtp.gmail.com
     # Debug: Whethere to debug the output (Just for testing)
     def __init__(self, email, password, smtp_server = "smtp.gmail.com", debug = False):
-        try:
             self.__email = email 
             self.__password = password
             self.__HOST = smtp_server
@@ -70,9 +69,6 @@ class SEND_MAIL:
 
             # Login using email and password
             self.__login()
-        except Exception as e:
-            print(e)
-            exit()
 
 
 
@@ -95,6 +91,7 @@ class SEND_MAIL:
             print(e)
             exit()
 
+
     # TODO: Call this function in destructor
     '''Send QUIT to server when conversation is complete'''
     def quit(self):
@@ -113,7 +110,6 @@ class SEND_MAIL:
     
     '''Function which connects to smtp server'''
     def __connect(self):
-        try:
             # Start TCP connection with smtp server
             self.main_socket = socket(AF_INET, SOCK_STREAM)
             self.main_socket.settimeout(self.__TIMEOUT)
@@ -125,9 +121,7 @@ class SEND_MAIL:
                 print(msg)
             
             if code != 220:
-                Exception("Connection Failed")
-        except Exception as e:
-            print(e)
+                raise Exception("Connection Failed")
 
 
     '''Saying hello to server to establish connection between client and server'''
@@ -170,7 +164,8 @@ class SEND_MAIL:
         pass_msg = encoded_pass
         code, reply = self.__send_encoded_msg(pass_msg)
         if code == 235:
-            print('You are logged in')
+            # print('You are logged in')
+            pass
         else: 
             raise Exception('Invalid username or password')
 

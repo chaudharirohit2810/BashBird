@@ -1,6 +1,6 @@
 import curses, textwrap
 from curses.textpad import Textbox, rectangle
-
+from BottomBar import BottomBar
 
 '''Class which handles all the UI part of write mail'''
 class Write_Mail_UI:
@@ -211,42 +211,18 @@ class Write_Mail_UI:
 
     
 
-    #<---------------------------------------------------------------Bottom Bar Functions--------------------------------------------------->
-    
-
     '''Setup bottom bar'''
-    # TODO: Later need to change this to use array and setup the length and width of bottom bar accordingly
-    # TODO: Major changes required
-    # TODO: Use array for displaying the functions
-    # Alert: Looks like there are still lots of bugs 
     def __set_bottom_bar(self):
-        h, w = self.__stdscr.getmaxyx()
-        # rectangle(self.__stdscr, h - 4, 0, h - 1, w - 2)
-        subject_key = " S:"
-        subject = "Edit Subject of Mail"
-        body_key = ' B:'
-        bodyMsg = "Edit Body of Mail"
-        send_mail_key = " M:"
-        sendMail = "Send Mail"
-        quit_key = " Q:"
-        quitMsg = "Quit Program"
-        mail_to_key = " T:"
-        main_to_msg = "Edit Mail To"
-        ack_key = " A:"
-        ack_msg = "Add Acknowledgment"
-        self.__stdscr.hline(h - 4, 0, curses.ACS_HLINE, w)
-        self.__bottom_bar_instruction(h - 3, 1, subject_key, subject)
-        self.__bottom_bar_instruction(h - 2, 1, body_key, bodyMsg)
-        self.__bottom_bar_instruction(h - 3, 30, mail_to_key, main_to_msg)
-        self.__bottom_bar_instruction(h - 2, 30, ack_key, ack_msg)
-        self.__bottom_bar_instruction(h - 3, 60, send_mail_key, sendMail)
-        self.__bottom_bar_instruction(h - 2, 60, quit_key, quitMsg)
-        
-
-    
-        
-       
-
+        options = [
+            {'key': 'S', 'msg': 'Edit Subject of Mail'},
+            {'key': 'B', 'msg': 'Edit Body of Mail'},
+            {'key': 'M', 'msg': 'Send Mail'},
+            {'key': 'Q', 'msg': 'Go Back'},
+            {'key': 'T', 'msg': 'Edit Mail To'},
+            {'key': 'A', 'msg': 'Add acknowledgement'}
+        ]
+        # show the bottom bar
+        BottomBar(self.__stdscr, options)
 
 
 
@@ -303,24 +279,6 @@ class Write_Mail_UI:
 
 
     #<--------------------------------------------Utility functions---------------------------------------->
-
-    '''Utility function which shows bottom bar instruction'''
-    # Arguements:
-    # y_pos = y_coordinate of instruction
-    # x_pos = x_coordinate of instruction
-    # key = Key which needs to be pressed
-    # instruction = Title of instruction
-    def __bottom_bar_instruction(self, y_pos, x_pos, key, instruction):
-        try:
-            self.__stdscr.attron(curses.A_STANDOUT)
-            self.__stdscr.addstr(y_pos, x_pos, key)
-            self.__stdscr.attroff(curses.A_STANDOUT)
-            self.__stdscr.attron(curses.A_BOLD)
-            self.__stdscr.addstr(y_pos, x_pos + 4 , instruction)
-            self.__stdscr.attroff(curses.A_BOLD)
-        except:
-            return
-
     
     '''Function to setup color pairs required'''
     def __setup_color_pairs(self):
