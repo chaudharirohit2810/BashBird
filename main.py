@@ -65,17 +65,34 @@ def show_main_intro(stdscr):
     stdscr.attroff(curses.A_DIM)
     stdscr.attroff(curses.A_BOLD)
 
+'''Main menu class which shows main menu'''
+class Main_Menu:
+    __menu_strings = [ "Logout", "Exit"]
+    __menu = []
+    __stdscr = None
+    '''Constructor of main menu'''
+    # Arguements
+    # stdscr    Standard screen
+    def __init__(self, stdscr):
+        self.__stdscr = stdscr
+        menu = [{'title': "Write mail", 'Function': Write_Mail_UI}]
+        menu.append({'title': "View mails", 'Function': Show_Folders})
+        for item in self.__menu_strings:
+            # Alert: Function will expect first arguement as stdscr for sure
+            menu.append({'title': item, 'Function': temp})
+        self.__menu = menu
+    
+    '''To show the menu'''
+    def show(self):
+        Menu(self.__stdscr, self.__menu, "Main menu", isMain=True)
+
 
 def main(stdscr):
     curses.curs_set(0)
     show_main_intro(stdscr)
-    menu_strings = [ "Logout", "Exit"]
-    menu = [{'title': "Write mail", 'Function': Write_Mail_UI}]
-    menu.append({'title': "Show mail", 'Function': Show_Folders})
-    for item in menu_strings:
-        # Alert: Function will expect first arguement as stdscr for sure
-        menu.append({'title': item, 'Function': temp})
-    Menu(stdscr, menu, "Main menu")
+    # show the main menu
+    main_menu = Main_Menu(stdscr)
+    main_menu.show()
 
 
 

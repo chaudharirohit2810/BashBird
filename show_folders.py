@@ -23,7 +23,7 @@ class Show_Folders:
             options = []
             for item in folders:
                 options.append({'title': item[1:-1]})
-            options.append({'title': "Exit", 'Function': None})
+            options.append({'title': "Back", 'Function': None})
             loading.stop()
             Menu(self.__stdscr, options, "Folders")
         else:
