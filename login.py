@@ -124,18 +124,8 @@ class LOGIN_UI:
                 password = self.__edit_box(email, password, self.__y_start + 5, self.__x_start + 2, isPass=True)
             
             elif key == ord('l'):
-                # self.__is_authenticating = True
-                self.__show_staus_message("Authenticating", isLoading=True)
-                try:
-                    SEND_MAIL(email, password)
-                    self.__show_staus_message("Authentication Successful", time_to_show=1)
-                    main_menu = Main_Menu(self.__stdscr)
-                    main_menu.show()
-                    # self.__is_authenticating = False
-                    
-                except Exception as e:
-                    # self.__is_authenticating = False
-                    self.__show_staus_message(str(e), time_to_show=4)
+                # Authenticate
+                self.__authenticate(email, password)
 
             # This is to refresh the layout when user resizes the terminal
             self.__set_values()
@@ -143,6 +133,37 @@ class LOGIN_UI:
 
             self.__stdscr.refresh()
         sys.exit()
+
+
+    '''To Authenticate using SMTP Server'''
+    # Arguements: 
+    # email: Email of user
+    # password: Password of user
+    def __authenticate(self, email, password):
+        # Show the authenticating message
+        self.__show_staus_message("Authenticating", isLoading=True)
+        try:
+            # Authenticate using email and password, it throws exception if something went wrong
+            SEND_MAIL(email, password)
+            self.__store_in_file(email, password)
+            self.__show_staus_message("Authentication Successful", time_to_show=1)
+            # Show main menu after authentication is completed
+            main_menu = Main_Menu(self.__stdscr)
+            main_menu.show()
+
+        except Exception as e:
+            self.__show_staus_message(str(e), time_to_show=4)
+
+
+    '''To store email and password in separate file'''
+    # Arguements: 
+    # email : Email of user
+    # password: Password of user
+    def __store_in_file(self, email, password):
+        fi = open(".env", "w+")
+        fi.write("EMAIL=" + email + "\n")
+        fi.write("PASSWORD=" + password + "\n")
+        fi.close()
 
 
     #<!------------------------------------------------Utils------------------------------------------------->

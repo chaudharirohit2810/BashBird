@@ -1,6 +1,7 @@
-import curses, textwrap
+import curses, textwrap, os
 from curses.textpad import Textbox, rectangle
 from BottomBar import BottomBar
+from dotenv import load_dotenv
 
 '''Class which handles all the UI part of write mail'''
 class Write_Mail_UI:
@@ -43,8 +44,11 @@ class Write_Mail_UI:
     # Stdscr: Standard screen of curses
     # TODO: Later will need to take email_from from file
     def __init__(self, stdscr):
+        load_dotenv()
         self.__stdscr = stdscr
         self.__stdscr.border(0)
+        email = os.getenv('EMAIL')
+        self.__email_from = email
         self.__setup_color_pairs()
         self.__draw()
 
