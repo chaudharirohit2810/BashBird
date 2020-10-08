@@ -184,22 +184,31 @@ class IMAP:
             return {self.__success: True, 'msg': "Mailbox Selected", 'number_of_mails': number_of_mails}
 
     
-    '''To fetch email from selected mailbox'''
+    '''To fetch email headers'''
     # Arguements:
-    # Start     Start index of email
-    # count     Count of the emails to fetch
-    # TODO: Later implement for multiple emails
-    # Alert: For now only works for one email
-    def fetch_email(self, start, count = 0):
-        send = "a02 FETCH " + str(start) + " (RFC822)" + self.__MAIL_NEW_LINE
-        self.__main_socket.send(send.encode())
-        success, msg = self.__get_whole_message()
+    # Start: Start index of mail
+    # count: Number of mails to fetch
+    def fetch_email_headers(self, start, count = 1):
+        command = "a02 FETCH " + str(start - count) + ":" + str(start) + \
+            " (BODY[HEADER.FIELDS (DATE SUBJECT FROM)])" + self.__MAIL_NEW_LINE
+        self.__main_socket.send(command.encode())
         
+        # Get the whole output from server
+        success, msg = self.__get_whole_message()
+
+        emails = []
+        # If the request success then parse the header
         if success:
-            recv_email = self.__decode_email(msg)
-            self.__get_info(recv_email)
+            msg = self.__separate_mail_headers(msg)
+            for index, item in enumerate(msg):
+                decoded_email = self.__decode_mail_headers(item)
+                emails.append(decoded_email)
+            return True, emails
+            
+
+        # If the request fails then return error
         else:
-            return {self.__success: False, 'msg': "Failed to fetch email! Please try again"}
+            False, "Failed to fetch email! Please try again!!"
         
     
 
@@ -220,6 +229,27 @@ class IMAP:
             print("Server: ", received_msg)
         return code, received_msg
 
+
+    '''Get individual mails from received'''
+    # Arguements:
+    # msg: Message returned by the server
+    def __separate_mail_headers(self, msg):
+        lines_arr = msg.splitlines()
+        ans = []
+        email = ""
+        prev_start = 0
+        index = 0
+        while index < len(lines_arr):
+            # This indicates the end of particular mail
+            if lines_arr[index] == "" and lines_arr[index + 1] == ")":
+                email = ""
+                for item in lines_arr[prev_start + 1:index]:
+                    email += item + "\n"
+                prev_start = index + 2
+                ans.append(email) 
+            index += 1  
+        return ans
+
     
     '''To get whole email back from the server'''
     def __get_whole_message(self):
@@ -228,58 +258,109 @@ class IMAP:
         while 1:
             try:
                 # Receive message from server
-                temp_msg = self.__main_socket.recv(1024).decode("utf-8", errors='ignore')
-                # print(temp_msg)
+                recv_bytes = self.__main_socket.recv(1024)
+
+                temp_msg = recv_bytes.decode()
+               
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
                 
                 # Check if the last line contains the codes involved in imap protocol
-                code = None
+                code1 = None
+                code2 = None
                 try:
-                    code = lines_arr[-1].split(" ")[1]
-                except:
-                    continue
-                if code in email_results:
-                    lines_arr.pop(-1)
+                    code1 = lines_arr[-1].split(" ")[0]
+                    code2 = lines_arr[-1].split(" ")[1]
+                    # print("temp", code1, code2)
+                except Exception as e:
+                    pass
 
+                if code1 in email_results or code2 in email_results:
+                    # print(code)
+                    # TODO: Check if code is ok nor not
+
+                    # print(code, msg)
+                    lines_arr.pop(-1)
+                    
                     # Add other lines from array to message
                     for item in lines_arr:
                         msg += item
                         msg += self.__MAIL_NEW_LINE
+                    
+                    # Remove first line and last two line
+                    msg = msg.splitlines()
+                    # msg = msg[1: -2]
+                    reply = ""
+                    # Again append other elements in array
+                    for index in range(len(msg)):
+                        reply += msg[index]
+                        if index != len(msg) - 1:
+                            reply += self.__MAIL_NEW_LINE
+                    
+                    
+                    # Return them
+                    return True, reply
 
-                    return True, msg
                 
                 msg += temp_msg
             except Exception as e:
-                if self.__debugging:
-                    print(e)
+                print(e)
+                # Return the error if exception occurs
+                # TODO: Later return appropriate message
                 return False, "Request Failed"
 
     
 
 
-    '''To decode mail from message received from the imap server'''
-    # Arguements: 
-    # msg   Message received from server
-    # Returns the email object by decoding the message
-    def __decode_email(self, msg):
-        msglines = msg.splitlines()
-        main_msg = ""
-        for item in msglines:
-            # If there is paranthesis on new line then it indicates end of mail according to imap protocol
-            if item == ")":
-                break
-            main_msg += item
-            main_msg += "\r\n"
-        # Get the message from 'Delivered-To' 
-        # header of email starts from here
-        main_msg = main_msg[main_msg.find('Delivered-To'):]
-
-        # Use email_lib to separate keys and values 
-        raw = email_lib.message_from_string(main_msg)
+    '''To separate subject, from and date from imap header'''
+    # Arguements:
+    # msg: Email header in string
+    def __decode_mail_headers(self, msg):
+        lines_arr = msg.splitlines()
+        index = 0
+        subject = ""
+        date = ""
+        mail_from = ""
         
-        return raw
+        # Loop to traverse over all the lines
+        while index < len(lines_arr):
+            # Check if it is subject
+            if lines_arr[index].lower().startswith("subject"):
+                flag1 = False; flag2 = False
+                is_start = True
+                # To handle multiline subject
+                while not flag1 and not flag2:
+                    try:
+                        if is_start:
+                            subject += lines_arr[index][9:]
+                            is_start = False
+                            index += 1
+                        else:
+                            subject += lines_arr[index] 
+                            index += 1
+                        try:
+                            flag1 = lines_arr[index].lower().startswith("date")
+                        except: 
+                            flag1 = False
+                        try:
+                            flag2 = lines_arr[index].lower().startswith("from")
+                        except:
+                            flag2 = False
+                    except:
+                        # End of list
+                        break
+            # Get Date from header
+            elif lines_arr[index].lower().startswith("date"):
+                date = lines_arr[index][6:]
+                index += 1
+            # Get mail_from from header
+            elif lines_arr[index].lower().startswith("from"):
+                mail_from = lines_arr[index][6:]
+                index += 1
+        
+        return {'Subject': subject, 'Date': date, 'From': mail_from}
     
+
 
     '''To get body of mail'''
     # Arguements: 
@@ -325,12 +406,14 @@ if __name__ == "__main__":
     load_dotenv()
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    imap = IMAP(old_mail, old_pass, debugging=True)
+    imap = IMAP(old_mail, old_pass, debugging=False)
     folders = imap.get_mailboxes()
     # print(folders)
     out = imap.select_mailbox('INBOX')
     num = out['number_of_mails']
-    mail_list = []
-    for i in range(1, 20):
-        imap.fetch_email(num - i)
+    emails = imap.fetch_email_headers(num, count=20)
+    for email in emails[1]:
+        print('Subject:', email['Subject'])
+        print('From:', email['From'])
+        print('Date:', email['Date'])
         print()
