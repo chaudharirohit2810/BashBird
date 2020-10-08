@@ -82,22 +82,16 @@ class SEND_MAIL:
     # subject: The subject of mail
     # data: Body of mail
     def send_email(self, mail_to, subject, data):
-        try:
-            print('Sending mail..................')
-            self.__send_main_from()
-            self.__send__RCPT_TO(mail_to)   
-            self.__send__DATA(subject, data)
-        except Exception as e:
-            print(e)
-            exit()
+        # print('Sending mail..................')
+        self.__send_main_from()
+        self.__send__RCPT_TO(mail_to)   
+        self.__send__DATA(subject, data)
 
 
     # TODO: Call this function in destructor
     '''Send QUIT to server when conversation is complete'''
     def quit(self):
         self.__send_encoded_msg(self.__QUIT)
-
-
 
 
 
@@ -219,7 +213,7 @@ class SEND_MAIL:
         if code != 250:
             raise Exception('Mail not sent successfully! Please try again')
         
-        print('Mail sent successfully')
+        # print('Mail sent successfully')
 
 
 

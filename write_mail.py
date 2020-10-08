@@ -1,19 +1,24 @@
-import curses, textwrap, os
+import curses, textwrap, os, time, re
 from curses.textpad import Textbox, rectangle
 from BottomBar import BottomBar
 from dotenv import load_dotenv
+from SMTP.main import SEND_MAIL
+from threading import Thread
 
 '''Class which handles all the UI part of write mail'''
 class Write_Mail_UI:
     
     #<---------------------------------------------Variables--------------------------------------------->
     __stdscr = None
-    __email_from = "chaudharirohit2810@gmail.com"
-    __email_to = "rohitkc2810@gmail.com"
+    __email_from = ""
+    __email_to = ""
     __key = 0
     __title = "Send a new mail"
     __subject = ""
     __body = ""
+    __pass = ""
+    # This flag becomes true when mail is sent
+    __is_mail_sent = False
 
 
     #Confirm Email Variables
@@ -33,6 +38,7 @@ class Write_Mail_UI:
     __EDIT_SUBJECT = ord('s')
     __QUIT = ord('q')
     __CONFIRM_MAIL = ord('m')
+    __EDIT_MAIL_TO_KEY = ord('t')
 
     
 
@@ -45,10 +51,12 @@ class Write_Mail_UI:
     # TODO: Later will need to take email_from from file
     def __init__(self, stdscr):
         load_dotenv()
+        curses.curs_set(0)
         self.__stdscr = stdscr
         self.__stdscr.border(0)
-        email = os.getenv('EMAIL')
-        self.__email_from = email
+        self.__email_from = os.getenv('EMAIL')
+        self.__pass = os.getenv('PASSWORD')
+
         self.__setup_color_pairs()
         self.__draw()
 
@@ -58,10 +66,14 @@ class Write_Mail_UI:
     
     '''Main function which draws all the elements on screen'''
     def __draw(self):
-        while (self.__key != self.__QUIT):
+        while (self.__key != self.__QUIT) and not self.__is_mail_sent:
             self.__stdscr.clear()
             
             self.__set_default_screen(self.__title, isMain= True)
+
+            self.__set_main_layout()
+            print(len(self.__email_to))
+            self.__key = self.__stdscr.getch()
 
             # TODO: Setup every string according to width and height 
             # TODO: Implement scroll view on small screen
@@ -69,12 +81,12 @@ class Write_Mail_UI:
                 self.__subject = self.__edit_box(self.__default_subject_input_msg, self.__default_subject_input_msg, self.__subject)
             elif self.__key == self.__EDIT_BODY:
                 self.__body = self.__edit_box(self.__default_body_input_msg, self.__default_body_input_msg, self.__body, size=2)
+            elif self.__key == self.__EDIT_MAIL_TO_KEY:
+                self.__email_to = self.__edit_mail_to(self.__email_to).strip()
             elif self.__key == self.__CONFIRM_MAIL:
                 self.__set_default_screen(self.__title, isConfirm = True)
 
-            self.__set_main_layout()
             
-            self.__key = self.__stdscr.getch()
 
 
 
@@ -156,12 +168,34 @@ class Write_Mail_UI:
 
         # Make this new window a textbox to edit
         box = Textbox(editwin)
-        box.stripspaces = True
+        # box.stripspaces = True
         box.edit()
         
 
         self.__set_default_screen(self.__title, isMain = True)
 
+        curses.curs_set(0)
+        return box.gather()
+
+    
+    '''To edit mail to field'''
+    # Arguements:
+    # to: Mail to default value
+    def __edit_mail_to(self, to):
+        curses.curs_set(1)
+        h, w = self.__stdscr.getmaxyx()
+        to_msg = "To (Ctrl + G to save): "
+        editwin = curses.newwin(1, w - 5, 5, len(to_msg) + 1)
+        editwin.insstr(to)
+        self.__stdscr.attron(curses.A_BOLD)
+        self.__stdscr.addstr(5, 1, to_msg)
+        self.__stdscr.attroff(curses.A_BOLD)
+        self.__stdscr.refresh()
+        box = Textbox(editwin)
+        box.stripspaces = True
+        box.edit()
+
+        self.__set_main_layout()
         curses.curs_set(0)
         return box.gather()
 
@@ -274,6 +308,28 @@ class Write_Mail_UI:
 
             # TODO: Do the functionality according to choice of user
             elif key == curses.KEY_ENTER or key in [10, 13]:
+                if self.__curr_confirm_index == 0:
+                    # Send mail using SMTP class and go back
+                    # TODO: Check if subject or body is not empty
+                    # Show sending mail status message
+                    self.__show_staus_message("Sending email....", isLoading=True)
+                    try:
+                        self.__check_validation()
+                        # Authenticate
+                        smtp = SEND_MAIL(self.__email_from, self.__pass)
+                        # Send mail
+                        smtp.send_email(self.__email_to, self.__subject, self.__body)
+
+                        # Show mail sent successfully message
+                        self.__show_staus_message("Mail sent Successfully", time_to_show=1.5)
+
+                        self.__is_mail_sent = True
+
+                        # Quit from smtp server
+                        smtp.quit()
+                    except Exception as e:
+                        self.__show_staus_message(str(e), 2)
+
                 self.__set_default_screen(self.__title, isMain= True)
                 break
 
@@ -283,6 +339,44 @@ class Write_Mail_UI:
 
 
     #<--------------------------------------------Utility functions---------------------------------------->
+
+    '''To show status message while authenticating'''
+    # Arguements:
+    # msg: Message to show
+    # time_to_show: Time for which message needs to be shown
+    # isLoading: If the text is related to loading
+     # TODO: Implement loading also
+    def __show_staus_message(self, msg, time_to_show = -1, isLoading=False):
+        # Blink the text if it is in loading state
+        h, w = self.__stdscr.getmaxyx()
+        if isLoading:
+            self.__stdscr.attron(curses.A_BLINK)
+
+        self.__stdscr.attron(curses.A_STANDOUT)
+        self.__stdscr.attron(curses.A_BOLD)
+        self.__stdscr.addstr(h - 5, w // 2 - len(msg) // 2, " " + str(msg) +  " ")
+        self.__stdscr.refresh()
+        if time_to_show != -1:
+            time.sleep(time_to_show)
+
+        self.__stdscr.attroff(curses.A_STANDOUT)
+        self.__stdscr.attroff(curses.A_BOLD)
+
+        if isLoading:
+            self.__stdscr.attroff(curses.A_BLINK)
+
+    '''To check if all the data filled is valid'''
+    def __check_validation(self):
+        # To check if receiver email is empty
+        if self.__email_to == "":
+            raise Exception("Please Enter Receiver Email")
+        # To check if subject is empty
+        if self.__subject == "":
+            raise Exception("Please Enter Subject Of Email")
+        # To check if body is empty
+        if self.__body == "":
+            raise Exception("Please Enter Body Of Email")
+        
     
     '''Function to setup color pairs required'''
     def __setup_color_pairs(self):

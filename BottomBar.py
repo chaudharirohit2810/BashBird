@@ -34,19 +34,6 @@ class BottomBar:
     # Alert: Looks like there are still lots of bugs 
     def __set_bottom_bar(self):
         h, w = self.__stdscr.getmaxyx()
-        # rectangle(self.__stdscr, h - 4, 0, h - 1, w - 2)
-        subject_key = " S:"
-        subject = "Edit Subject of Mail"
-        body_key = ' B:'
-        bodyMsg = "Edit Body of Mail"
-        send_mail_key = " M:"
-        sendMail = "Send Mail"
-        quit_key = " Q:"
-        quitMsg = "Quit Program"
-        mail_to_key = " T:"
-        main_to_msg = "Edit Mail To"
-        ack_key = " A:"
-        ack_msg = "Add Acknowledgment"
         # To show horizontal line
         self.__stdscr.hline(h - 4, 0, curses.ACS_HLINE, w)
 
