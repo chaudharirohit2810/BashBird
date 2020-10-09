@@ -6,13 +6,16 @@ from email.base64mime import body_encode as encode_64
 import email as email_lib
 from bs4 import BeautifulSoup
 
+
 '''Class which does all the part of SMTP Protocol'''
-# Functions        Functionality
+# Functions             Functionality
 #-----------------------------------------------------------------------------------------------------------
-# Constructor      Logs in to the imap server using provided email and pasword
-# get_mailboxes    Gets all the mailboxes available for user.
-# select_mailbox   Selects particular mailbox to use 
-# fetch_email      Fetches emails for selected mailbox
+# Constructor           Logs in to the imap server using provided email and pasword
+# get_mailboxes         Gets all the mailboxes available for user.
+# select_mailbox        Selects particular mailbox to use 
+# fetch_email_headers   Fetches number of email headers from selected mailbox
+# get_boundary_id       Get boundary id of body
+# fetch_whole_body      Fetch body of selected email
 
 class IMAP:
     
@@ -28,6 +31,7 @@ class IMAP:
 
     __AUTH_MSG = "a01 LOGIN" # Authentication message
     __MAIL_NEW_LINE = "\r\n"
+
 
     # TODO: Create a dictionary of imap servers and port numbers
     __SSL_PORT = 993 # Port for gmail imap server
@@ -161,6 +165,7 @@ class IMAP:
         return {self.__success: True, 'folders': folders}
 
     
+
     '''To select particular main box'''
     # Arguements:
     # name      Name of mailbox
@@ -185,6 +190,8 @@ class IMAP:
             return {self.__success: True, 'msg': "Mailbox Selected", 'number_of_mails': number_of_mails}
 
     
+
+
     '''To fetch email headers'''
     # Arguements:
     # Start: Start index of mail
@@ -212,6 +219,7 @@ class IMAP:
             False, "Failed to fetch email! Please try again!!"
 
 
+
     '''To get boundary id of body'''
     # The boundary id can be used to separate diffent body
     # Arguements:
@@ -230,10 +238,11 @@ class IMAP:
             return boundary_id
 
 
-    '''To fetch whole email'''
+
+    '''To fetch whole body of email'''
     # Arguements:
     # index: Index of mail to fetch
-    def fetch_whole_email(self, index):
+    def fetch_whole_body(self, index):
         boundary_id = self.get_boundary_id(index)
         body = ""
         if boundary_id != None:
@@ -277,8 +286,9 @@ class IMAP:
             print("Server: ", received_msg)
         return code, received_msg
 
+
     
-    '''To get whole email back from the server'''
+    '''To get whole reply back from the server'''
     def __get_whole_message(self):
         msg = ""
         email_results = ["OK", "NO", "BAD"]
@@ -298,7 +308,7 @@ class IMAP:
                 try:
                     code1 = lines_arr[-1].split(" ")[0]
                     code2 = lines_arr[-1].split(" ")[1]
-                    # print("temp", code1, code2)
+                    
                 except Exception as e:
                     pass
 
@@ -360,6 +370,7 @@ class IMAP:
         return ans
 
 
+
     '''To separate subject, from and date from imap header'''
     # Arguements:
     # msg: Email header in string
@@ -409,7 +420,8 @@ class IMAP:
         return {'Subject': subject, 'Date': date, 'From': mail_from}
     
 
-    #<!--------------------------------------------Body--------------------------------------------------------->
+
+    #<!-------------------------------------------- Body Utils --------------------------------------------------------->
 
     '''To get start indices of boundary_id'''
     # Used to separate bodies
@@ -506,17 +518,14 @@ class IMAP:
     # body: Body of mail
     def __get_cleaned_up_body(self, header, body):
         text = body
-        # if header[0] == "text/html":
         text = self.__extract_text_from_html(body)
         try:
-            text = quopri.decodestring(text).decode()
-            
+            text = quopri.decodestring(text).decode()       
         except Exception as e:
-            # print(e)
             pass
-        # print(text.splitlines())
+        
         ans = ""
-        # print(text)
+        
         for line in text.splitlines():
             line = line.replace("=20", '')
             if line.strip() != '':
@@ -559,12 +568,6 @@ if __name__ == "__main__":
     # print(folders)
     out = imap.select_mailbox('INBOX')
     num = out['number_of_mails']
-    # imap.fetch_whole_email(num)
     for i in range(0, 20):
-        imap.fetch_whole_email(num - i)
-    # emails = imap.fetch_email_headers(num, count=20)
-    # for email in emails[1]:
-    #     print('Subject:', email['Subject'])
-    #     print('From:', email['From'])
-    #     print('Date:', email['Date'])
-    #     print()
+        imap.fetch_whole_body(num - i)
+   
