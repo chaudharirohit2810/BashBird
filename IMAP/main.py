@@ -1,9 +1,10 @@
 from socket import *
-import ssl
+import ssl, quopri, re
 from dotenv import load_dotenv
 import os
 from email.base64mime import body_encode as encode_64
 import email as email_lib
+from bs4 import BeautifulSoup
 
 '''Class which does all the part of SMTP Protocol'''
 # Functions        Functionality
@@ -209,6 +210,53 @@ class IMAP:
         # If the request fails then return error
         else:
             False, "Failed to fetch email! Please try again!!"
+
+
+    '''To get boundary id of body'''
+    # The boundary id can be used to separate diffent body
+    # Arguements:
+    # index: Index of mail to fetch
+    def get_boundary_id(self, index):
+        # Get the boundary id to separate different bodies
+        command_boundary_id = "a02 FETCH " + str(index) + \
+            " (BODY[HEADER.FIELDS (Content-Type)])" + self.__MAIL_NEW_LINE
+        self.__main_socket.send(command_boundary_id.encode())
+        success, msg = self.__get_whole_message()
+        if success:
+            main_header = '\n'.join(line for line in msg.splitlines()[1:-2])
+            boundary_id = None
+            boundary_key = "boundary="
+            boundary_id = main_header[main_header.find(boundary_key) + len(boundary_key):]
+            return boundary_id
+
+
+    '''To fetch whole email'''
+    # Arguements:
+    # index: Index of mail to fetch
+    def fetch_whole_email(self, index):
+        boundary_id = self.get_boundary_id(index)
+        body = ""
+        if boundary_id != None:
+            command_body = "a02 FETCH " + str(index) + \
+                " (BODY[text])" + self.__MAIL_NEW_LINE
+            self.__main_socket.send(command_body.encode())
+            success, msg = self.__get_whole_message()
+            if success:
+                # print(msg)
+                body_list = self.__get_email_body_list(boundary_id, msg)
+                
+                for item in body_list:
+                
+                    header, main = self.__separate_body(item)
+                    headers = self.__get_body_headers(header)
+                    main = self.__get_cleaned_up_body(headers, main)
+                    body += main + "\n"
+                print(body)
+                
+
+                        
+
+                   
         
     
 
@@ -229,27 +277,6 @@ class IMAP:
             print("Server: ", received_msg)
         return code, received_msg
 
-
-    '''Get individual mails from received'''
-    # Arguements:
-    # msg: Message returned by the server
-    def __separate_mail_headers(self, msg):
-        lines_arr = msg.splitlines()
-        ans = []
-        email = ""
-        prev_start = 0
-        index = 0
-        while index < len(lines_arr):
-            # This indicates the end of particular mail
-            if lines_arr[index] == "" and lines_arr[index + 1] == ")":
-                email = ""
-                for item in lines_arr[prev_start + 1:index]:
-                    email += item + "\n"
-                prev_start = index + 2
-                ans.append(email) 
-            index += 1  
-        return ans
-
     
     '''To get whole email back from the server'''
     def __get_whole_message(self):
@@ -260,7 +287,7 @@ class IMAP:
                 # Receive message from server
                 recv_bytes = self.__main_socket.recv(1024)
 
-                temp_msg = recv_bytes.decode()
+                temp_msg = recv_bytes.decode('ascii', errors='ignore')
                
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
@@ -310,6 +337,27 @@ class IMAP:
                 return False, "Request Failed"
 
     
+    #<!------------------------------------------------Base Mail Headers---------------------------------------->
+
+    '''Get individual mails from received'''
+    # Arguements:
+    # msg: Message returned by the server
+    def __separate_mail_headers(self, msg):
+        lines_arr = msg.splitlines()
+        ans = []
+        email = ""
+        prev_start = 0
+        index = 0
+        while index < len(lines_arr):
+            # This indicates the end of particular mail
+            if lines_arr[index] == "" and lines_arr[index + 1] == ")":
+                email = ""
+                for item in lines_arr[prev_start + 1:index]:
+                    email += item + "\n"
+                prev_start = index + 2
+                ans.append(email) 
+            index += 1  
+        return ans
 
 
     '''To separate subject, from and date from imap header'''
@@ -361,49 +409,149 @@ class IMAP:
         return {'Subject': subject, 'Date': date, 'From': mail_from}
     
 
+    #<!--------------------------------------------Body--------------------------------------------------------->
 
-    '''To get body of mail'''
+    '''To get start indices of boundary_id'''
+    # Used to separate bodies
+    # boundary_id: Boundary id of email
+    # msg: Reply from imap server
+    def __get_boundary_indices(self, boundary_id, msg):
+        # Replace quotes in boundary_id
+        boundary_id = boundary_id.replace('"', '')
+
+        # Add -- add the start of boundary_id (Present in imap_header)
+        boundary_id = "--" + boundary_id
+        
+        boundary_indices = []
+        
+        # Find all the occurunces of boundary_id and add its index to array
+        boundary_indices = [i.start() for i in re.finditer(boundary_id, msg)]
+        
+        # Return the array
+        return boundary_indices
+
+
+
+    '''Separate bodies from email'''
+    # Arguements:
+    # boundary_id: Boundary id of email
+    # msg: Reply from imap server
+    def __get_email_body_list(self, boundary_id, msg):
+
+        # Find all the occurunce of boundary_id
+        boundary_indices = self.__get_boundary_indices(boundary_id, msg)
+        body_list = []
+    
+        i = 0
+        while i < len(boundary_indices) - 1:
+            # Select body between two occurunces of boundary_id
+            temp_msg = msg[boundary_indices[i]:boundary_indices[i + 1]].strip()
+            
+            body_list.append('\n'.join(line for line in temp_msg.splitlines()[1:]))
+            i += 1
+       
+        # Return all the bodies present in email
+        return body_list
+
+
+    '''Separate header and main content of body'''
+    # Arguements:
+    # body: Body of mail
+    def __separate_body(self, body):
+        i = 0
+        # Loop over lines to find CRLF
+        for line in body.splitlines():
+            if line == '':
+                break
+            i += 1
+
+        # Lines before CRLF is header
+        header = '\n'.join(line for line in body.splitlines()[:i])
+        # Lines after CRLF is main content
+        body = '\n'.join(line for line in body.splitlines()[i:])
+
+        # Return the header and body
+        return header, body
+
+
+    '''Get body headers'''
+    # Arguemnts: 
+    # header: Header present in body
+    # return content type and content encoding type
+    def __get_body_headers(self, header):
+        # print(header)
+        content_type = ""
+        content_encoding=""
+        content_type_key = "Content-Type:"
+        content_encoding_key = "Content-Transfer-Encoding:"
+
+        for line in header.splitlines():
+            # To find the content type
+            if line.startswith(content_type_key):
+                start = line.find(content_type_key) + len(content_type_key)
+                content_type = line[start:]
+                content_type = content_type[:content_type.find(';')].strip()
+            
+            # To find the content transfer encoding
+            elif line.startswith(content_encoding_key):
+                content_encoding = line[line.find(content_encoding_key) + len(content_encoding_key):].strip()
+
+        return content_type, content_encoding
+
+
+    
+    '''To get text from body according to content-type and content-transfer-encoding'''
+    # Arguements:
+    # header: contains content-type and content-transfer encoding
+    # body: Body of mail
+    def __get_cleaned_up_body(self, header, body):
+        text = body
+        # if header[0] == "text/html":
+        text = self.__extract_text_from_html(body)
+        try:
+            text = quopri.decodestring(text).decode()
+            
+        except Exception as e:
+            # print(e)
+            pass
+        # print(text.splitlines())
+        ans = ""
+        # print(text)
+        for line in text.splitlines():
+            line = line.replace("=20", '')
+            if line.strip() != '':
+                ans += line.strip() + "\n"
+        return ans
+
+
+
+    '''To get text from html'''
     # Arguements: 
-    # email_obj     The email object
-    # Returns the body of email
-    def __get_body(self, email_obj):
-        if email_obj.is_multipart():
-            return self.__get_body(email_obj.get_payload(0))
-        else:
-            return email_obj.get_payload(None, True).decode()
+    # body: Body of mail
+    def __extract_text_from_html(self, body):
+        text = ""
+        try:
+            soup = BeautifulSoup(body, features="html.parser")
+            for extras in soup(['script', 'style']):
+                extras.extract()
+            text = soup.get_text()
+        except:
+            text = body
+        ans = ""
+        for line in text.splitlines():
+            if line.strip() == '':
+                continue
+            new_line = ""
+            for word in line.split(" "):
+                new_line += word.strip() + " "
+            ans += new_line.strip() + "\n"
+        return ans
 
-
-
-    '''To get different headers of email'''
-    # Arguements
-    # email_obj     The email object
-    # TODO: Later use it to return the email with required information (Not known right now)
-    # Alert: For now it is just printing data Later needs to return data
-    def __get_info(self, email_obj):
-        # keys = email_obj.keys()
-        # for key in keys:
-        #     print(key, email_obj[key], sep=": ")
-        # return
-        # To get To
-        print("To:", email_obj['Delivered-To'])
-
-        # To get From
-        print("From:", email_obj['From'])
-
-        # To get subject
-        print("Subject:", email_obj['Subject'])
-
-        # To get Date
-        print("Date:", email_obj['Date'])
-
-        # # To get body of email
-        # print("Body: ")
-        # print(self.__get_body(email_obj).strip('\r\n'))
 
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv('./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
     imap = IMAP(old_mail, old_pass, debugging=False)
@@ -411,9 +559,12 @@ if __name__ == "__main__":
     # print(folders)
     out = imap.select_mailbox('INBOX')
     num = out['number_of_mails']
-    emails = imap.fetch_email_headers(num, count=20)
-    for email in emails[1]:
-        print('Subject:', email['Subject'])
-        print('From:', email['From'])
-        print('Date:', email['Date'])
-        print()
+    # imap.fetch_whole_email(num)
+    for i in range(0, 20):
+        imap.fetch_whole_email(num - i)
+    # emails = imap.fetch_email_headers(num, count=20)
+    # for email in emails[1]:
+    #     print('Subject:', email['Subject'])
+    #     print('From:', email['From'])
+    #     print('Date:', email['Date'])
+    #     print()

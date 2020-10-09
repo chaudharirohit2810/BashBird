@@ -1,0 +1,33 @@
+Commands that are used in Non-Authenticated State
+CAPABILITY:
+Syntax: code CAPABILITY
+Uses: 
+Returns the capabilities of the imap server
+
+
+NOOP:
+Syntax: code NOOP
+Uses:
+Just used to keep the connection between server and client alive.
+
+
+LOGOUT:
+Syntax: code LOGOUT
+Uses:
+As we use it. To end the connection between client and server
+
+
+
+Commands that are used to go from Non-Authenticated State to Authenticated State
+LOGIN:
+Syntax: code LOGIN username password
+Uses:
+Use of the LOGIN command over an insecure network is a security risk, because anyone
+monitoring network traffic can obtain plaintext passwords. Only when the connection is over SSL or TLS 
+has been started then only use LOGIN command.
+
+
+
+Commands that are used in Authenticated State:
+
+

@@ -55,11 +55,12 @@ class SEND_MAIL:
     # Password: Password of user
     # smtp_server : Smtp hostname of server. Default: smtp.gmail.com
     # Debug: Whethere to debug the output (Just for testing)
-    def __init__(self, email, password, smtp_server = "smtp.gmail.com", debug = False):
+    def __init__(self, email, password, smtp_server = "smtp.gmail.com", ssl_port=465, debug = False):
             self.__email = email 
             self.__password = password
             self.__HOST = smtp_server
             self.__debugging = debug
+            self.__SSL_PORT=ssl_port
 
             # Connect to smtp server
             self.__connect()
@@ -129,7 +130,10 @@ class SEND_MAIL:
     # Alert: Not sure right now whether it really does ssl (Will need to check)
     '''Function to connect to smtp server with ssl'''
     def __ssl_connect(self):
-        self.main_socket = ssl.wrap_socket(self.main_socket)
+        context = ssl.create_default_context()
+        host = self.__HOST
+    
+        self.main_socket = context.wrap_socket(self.main_socket, server_hostname=host)
 
 
 
@@ -240,7 +244,7 @@ class SEND_MAIL:
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
     ins = SEND_MAIL(old_mail, old_pass, debug = True)
