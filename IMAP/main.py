@@ -264,7 +264,9 @@ class IMAP:
                     headers = self.__get_body_headers(header)
                     main = self.__get_cleaned_up_body(headers, main)
                     body += main + "\n"
-                print(body)
+                return body
+            else:
+                raise Exception("Something went wrong! Body not fetched properly")
                 
 
                         

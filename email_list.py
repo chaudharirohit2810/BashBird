@@ -4,6 +4,8 @@ from BottomBar import BottomBar
 from loading import Loading
 from dotenv import load_dotenv
 from IMAP.main import IMAP
+from Title import Title
+from email_info import EMAIL_INFO
 
 
 class EMAIL_LIST:
@@ -22,7 +24,9 @@ class EMAIL_LIST:
 
     options = [
         {'key': 'D', 'msg': 'Delete Mail'},
-        {'key': 'Q', 'msg': 'Go Back'}
+        {'key': 'Q', 'msg': 'Go Back'},
+        {'key': '⇵', 'msg': 'Navigate through emails'},
+        {'key': '⏎', 'msg': 'To See Details'},
     ]
 
     __main_list = []
@@ -54,6 +58,7 @@ class EMAIL_LIST:
 
             # Refresh the screen
             self.__stdscr.refresh()
+
 
 
     '''To fetch emails from imap server using IMAP class'''
@@ -98,6 +103,7 @@ class EMAIL_LIST:
             
             
 
+
     '''To setup the main layout of page with scrollable behaviour'''
     def __set_main_layout(self):
 
@@ -133,6 +139,14 @@ class EMAIL_LIST:
 
                         # Again reset the current position
                         self.__curr_position = 0
+
+            # When enter is pressed
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                # Show the email info component which will show details of email
+                EMAIL_INFO(self.__stdscr, 
+                            (self.num - self.__arr_position, self.__main_list[self.__arr_position]['Subject'], 
+                            self.__main_list[self.__arr_position]['From'], self.__main_list[self.__arr_position]['Date']), 
+                         self.__imap)
                     
 
             # Calculate the end of display list
@@ -150,7 +164,6 @@ class EMAIL_LIST:
         while key != ord('q'):
             # Clear the screen
             self.__stdscr.clear()
-             
             self.__stdscr.attron(curses.A_BOLD)
             self.__stdscr.addstr(h // 2, w // 2 - len(msg) // 2, msg)
             self.__stdscr.attroff(curses.A_BOLD)
@@ -177,7 +190,12 @@ class EMAIL_LIST:
 
         self.__stdscr.clear()
 
-        start = 1
+        # setup title
+        title = "Emails in " + self.__directory_name
+        Title(self.__stdscr, title)
+
+        # Start of emali list
+        start = 2
         i = 0
 
         # Loop over the list until the screen or list is ended
