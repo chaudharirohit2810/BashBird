@@ -4,6 +4,7 @@ from BottomBar import BottomBar
 from dotenv import load_dotenv
 from SMTP.main import SEND_MAIL
 from threading import Thread
+from Title import Title
 
 '''Class which handles all the UI part of write mail'''
 class Write_Mail_UI:
@@ -210,7 +211,7 @@ class Write_Mail_UI:
     def __set_default_screen(self, title, isMain = False, isConfirm = False):
         self.__stdscr.clear()
             
-        self.__set_title(title)
+        Title(self.__stdscr, title)
 
         # Gives instructions to get different things done
         if isMain:
@@ -225,27 +226,7 @@ class Write_Mail_UI:
         
     
     
-    '''Setup Title on Top'''
-    # TODO: Set background and foreground color of title to different color
-    # TODO: Try different combinations of color
-    def __set_title(self, title):
-        _, w = self.__stdscr.getmaxyx()
-
-        # Procedure followed to set title at the center and to set background as white
-        count = w // 2 - len(title) // 2
-        temp_title = ""
-        for i in range(count):
-            temp_title += " "
-        temp_title += title.upper()
-        for i in range(count - 1):
-            temp_title += " "
-
-        # Print the title
-        self.__stdscr.attron(curses.color_pair(1))
-        self.__stdscr.attron(curses.A_BOLD)
-        self.__stdscr.addstr(0, 0, temp_title)
-        self.__stdscr.attroff(curses.A_BOLD)
-        self.__stdscr.attroff(curses.color_pair(1))
+    
 
     
 
