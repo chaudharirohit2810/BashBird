@@ -191,7 +191,7 @@ class IMAP:
                 except Exception as e:
                     continue
 
-            return {self.__success: True, 'msg': "Mailbox Selected", 'number_of_mails': number_of_mails}
+            return number_of_mails
 
     
 
@@ -301,7 +301,7 @@ class IMAP:
                 # Receive message from server
                 recv_bytes = self.__main_socket.recv(1024)
 
-                temp_msg = recv_bytes.decode('ascii', errors='ignore')
+                temp_msg = recv_bytes.decode('unicode-escape', errors='ignore')
                
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
@@ -575,8 +575,8 @@ if __name__ == "__main__":
     imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
     print(folders)
-    out = imap.select_mailbox(folders['folders'][0])
-    num = out['number_of_mails']
+    num = imap.select_mailbox(folders['folders'][0])
+  
     emails = imap.fetch_email_headers(num, 20)
     print(emails)
    

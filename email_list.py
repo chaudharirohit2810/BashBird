@@ -45,14 +45,15 @@ class EMAIL_LIST:
         # To fetch emails
         self.__fetch_emails()
 
-        # To setup bottom bar menu to show instructions
-        self.__setup_bottom_bar()
+        if not self.__is_error:
+            # To setup bottom bar menu to show instructions
+            self.__setup_bottom_bar()
 
-        # To setup list of emails
-        self.__set_main_layout()
+            # To setup list of emails
+            self.__set_main_layout()
 
-        # Refresh the screen
-        self.__stdscr.refresh()
+            # Refresh the screen
+            self.__stdscr.refresh()
 
 
     '''To fetch emails from imap server using IMAP class'''
@@ -64,14 +65,20 @@ class EMAIL_LIST:
             loading.start()
             
             # Select particular mailbox
-            out = self.__imap.select_mailbox(self.__directory_name)
+            num = self.__imap.select_mailbox(self.__directory_name)
 
-            # Get the number of mails 
-            num = out['number_of_mails']
             self.num = num
+
+            if num == 0:
+                loading.stop()
+                self.__is_error = True
+                msg = "Nothing in " + self.__directory_name[1:-1] + "!! Press 'q' to go back"
+                self.__show_message(msg)
+                return
             
             # Fetch atleast 30 mails if total mails are less than that then fetch total number of mails
             count = min(num - 1, 30)
+
             emails = self.__imap.fetch_email_headers(num, count)
 
             # Check if the request was success
@@ -85,12 +92,16 @@ class EMAIL_LIST:
 
         except Exception as e:
             # To show the error message
-            self.exception = str(e)
             loading.stop()
+            self.__is_error = True
+            self.__show_message("Something went wrong! Press 'q' to go back")
+            
             
 
     '''To setup the main layout of page with scrollable behaviour'''
     def __set_main_layout(self):
+
+
         key = 0
         arr_start = 0
         # Initially setup the list to get maximum mails that can be shown on single page
@@ -129,7 +140,30 @@ class EMAIL_LIST:
 
             # Show the email list
             max_len = max(self.__set_email_list(self.__main_list[arr_start:arr_end]), max_len)
-            
+
+
+    '''To show message when mailbox is empty or some error occured'''
+    def __show_message(self, msg):
+        h, w = self.__stdscr.getmaxyx()
+        
+        key = 0
+        while key != ord('q'):
+            # Clear the screen
+            self.__stdscr.clear()
+             
+            self.__stdscr.attron(curses.A_BOLD)
+            self.__stdscr.addstr(h // 2, w // 2 - len(msg) // 2, msg)
+            self.__stdscr.attroff(curses.A_BOLD)
+
+            # Refresh the screen
+            self.__stdscr.refresh()
+
+
+
+            key = self.__stdscr.getch()
+
+        
+        
 
 
 
