@@ -66,7 +66,7 @@ def show_main_intro(stdscr):
 
 def main(stdscr):
     curses.curs_set(0)
-    load_dotenv()
+    load_dotenv('./.env')
     is_authenticated = show_main_intro(stdscr)
     # If the user is already authenticated then go to main menu
     if is_authenticated == True:

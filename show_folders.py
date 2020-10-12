@@ -4,6 +4,7 @@ from menu import Menu
 from dotenv import load_dotenv
 import os
 import curses
+from email_list import EMAIL_LIST
 
 class Show_Folders:
     __stdscr = None
@@ -12,21 +13,24 @@ class Show_Folders:
         self.__stdscr = stdscr
         loading = Loading(stdscr)
         loading.start()
-        load_dotenv()
-        email = os.getenv('EMAIL')
-        password = os.getenv('PASSWORD')
-        imap = IMAP(email, password)
-        folders = imap.get_mailboxes()
-        if folders['success']:
+        load_dotenv('./.env')
+        
+        
+        try:
+            email = os.getenv('EMAIL')
+            password = os.getenv('PASSWORD')
+            imap = IMAP(email, password)
+            folders = imap.get_mailboxes()
             folders = folders['folders']
             print(folders)
             options = []
             for item in folders:
-                options.append({'title': item[1:-1]})
-            options.append({'title': "Back", 'Function': None})
+                options.append({'title': item[1:-1], 'Function': EMAIL_LIST, 'args': (item, imap)})
+            options.append({'title': "Back", 'Function': None, 'args': None})
             loading.stop()
             Menu(self.__stdscr, options, "Folders")
-        else:
+
+        except:
             loading.stop()
 
 

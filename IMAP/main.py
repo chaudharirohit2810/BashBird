@@ -3,6 +3,7 @@ import ssl, quopri, re
 from dotenv import load_dotenv
 import os
 from email.base64mime import body_encode as encode_64
+from email.base64mime import body_decode as decode_64
 import email as email_lib
 from bs4 import BeautifulSoup
 
@@ -140,11 +141,11 @@ class IMAP:
     def get_mailboxes(self):
         # LIST command which needs to be sent to imap server
         send = 'a02 LIST "" "*"'
-        
+        self.__main_socket.settimeout(2)
         code, msg = self.__send_encoded_msg(send)
-
+        self.__main_socket.settimeout(self.__TIMEOUT)
         if code != "OK":
-            return {self.__success: False, 'folders': []}
+            raise Exception("Not able to fetch mailboxes")
 
         # Separate lines of message
         folders_imap = msg.splitlines()
@@ -157,8 +158,10 @@ class IMAP:
             name = ""
             for i in range(index + 1, len(tokens)):
                 name += tokens[i]
-            if name != '"[Gmail]"':
-                folders.append(name)
+                name += " "
+            print(name)
+            if name[:-1] != '"[Gmail]"':
+                folders.append(name[:-1])
 
 
         # Return list of folders except last attribute
@@ -170,11 +173,12 @@ class IMAP:
     # Arguements:
     # name      Name of mailbox
     def select_mailbox(self, name):
-        send = 'a02 SELECT "{folder_name}"'.format(folder_name = name)
+        send = 'a02 SELECT {folder_name}'.format(folder_name = name)
         code, msg = self.__send_encoded_msg(send)
         
         if code != "OK":
-            return {self.__success: False, 'msg': "Invalid mailbox name", 'number_of_mails': -1}
+            raise Exception('Invalid mailbox name')
+            # return {self.__success: False, 'msg': "Invalid mailbox name", 'number_of_mails': -1}
         else:
             number_of_mails = 0
             # To get the number of mails in mailbox
@@ -208,15 +212,15 @@ class IMAP:
         # If the request success then parse the header
         if success:
             msg = self.__separate_mail_headers(msg)
-            for index, item in enumerate(msg):
+            for item in msg:
                 decoded_email = self.__decode_mail_headers(item)
-                emails.append(decoded_email)
+                emails.insert(0, decoded_email)
+
             return True, emails
-            
 
         # If the request fails then return error
         else:
-            False, "Failed to fetch email! Please try again!!"
+            return False, "Failed to fetch email! Please try again!!"
 
 
 
@@ -305,6 +309,7 @@ class IMAP:
                 # Check if the last line contains the codes involved in imap protocol
                 code1 = None
                 code2 = None
+
                 try:
                     code1 = lines_arr[-1].split(" ")[0]
                     code2 = lines_arr[-1].split(" ")[1]
@@ -338,7 +343,6 @@ class IMAP:
                     # Return them
                     return True, reply
 
-                
                 msg += temp_msg
             except Exception as e:
                 print(e)
@@ -416,6 +420,11 @@ class IMAP:
             elif lines_arr[index].lower().startswith("from"):
                 mail_from = lines_arr[index][6:]
                 index += 1
+
+            try:
+                subject = quopri.decodestring(subject).decode()       
+            except Exception as e:
+                pass
         
         return {'Subject': subject, 'Date': date, 'From': mail_from}
     
@@ -563,11 +572,11 @@ if __name__ == "__main__":
     load_dotenv('./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    imap = IMAP(old_mail, old_pass, debugging=False)
+    imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
-    # print(folders)
-    out = imap.select_mailbox('INBOX')
+    print(folders)
+    out = imap.select_mailbox(folders['folders'][0])
     num = out['number_of_mails']
-    for i in range(0, 20):
-        imap.fetch_whole_body(num - i)
+    emails = imap.fetch_email_headers(num, 20)
+    print(emails)
    

@@ -1,4 +1,5 @@
 from menu import Menu
+import curses
 from write_mail import Write_Mail_UI
 from show_folders import Show_Folders
 
@@ -35,12 +36,13 @@ class Main_Menu:
     # stdscr    Standard screen
     def __init__(self, stdscr):
         self.__stdscr = stdscr
-        menu = [{'title': "Write mail", 'Function': Write_Mail_UI}]
-        menu.append({'title': "View mails", 'Function': Show_Folders})
+        menu = [{'title': "Write mail", 'Function': Write_Mail_UI, 'args': None}]
+        menu.append({'title': "View mails", 'Function': Show_Folders, 'args': None})
         for item in self.__menu_strings:
             # Alert: Function will expect first arguement as stdscr for sure
-            menu.append({'title': item, 'Function': temp})
+            menu.append({'title': item, 'Function': temp, 'args': None})
         self.__menu = menu
+    
     
     '''To show the menu'''
     def show(self):

@@ -50,7 +50,7 @@ class Write_Mail_UI:
     # Stdscr: Standard screen of curses
     # TODO: Later will need to take email_from from file
     def __init__(self, stdscr):
-        load_dotenv()
+        load_dotenv('./.env')
         curses.curs_set(0)
         self.__stdscr = stdscr
         self.__stdscr.border(0)

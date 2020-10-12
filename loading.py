@@ -8,6 +8,7 @@ from threading import *
 # Constructor           Required Arguements: stdscr(Standard screen of curses)
 # start                 To start the loading
 # stop                  To stop the loading
+
 class Loading:
     #<!---------------------------------------------------Variables------------------------------------------->
     __stdscr = None

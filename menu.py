@@ -181,10 +181,14 @@ class Menu:
     '''When enter is pressed on particular item'''
     def __on_enter_pressed(self):
         
-       
-        # TODO: Also pass arguements to this function
-        # Call the desired function
-        self.__menu[self.__curr_index]['Function'](self.__stdscr)
+        if self.__menu[self.__curr_index]['args'] != None:
+            arguements = self.__menu[self.__curr_index]['args']
+            arg1, arg2 = arguements
+            self.__menu[self.__curr_index]['Function'](self.__stdscr, arg1, arg2)
+        else:
+            # TODO: Also pass arguements to this function
+            # Call the desired function
+            self.__menu[self.__curr_index]['Function'](self.__stdscr)
 
         # Display menu again after pressing enter
         self.__display_menu()
