@@ -198,7 +198,7 @@ class IMAP:
             except Exception as e:
                 # print(e)
                 break
-        # print(msg)
+        
         
         if not success:
             raise Exception('Invalid mailbox name')
@@ -246,8 +246,10 @@ class IMAP:
         # If the request success then parse the header
         if success:
             msg = self.__separate_mail_headers(msg)
-            for item in msg:
+            
+            for index, item in enumerate(msg):
                 decoded_email = self.__decode_mail_headers(item)
+                decoded_email['index'] = start - count + index;
                 emails.insert(0, decoded_email)
 
             return True, emails
@@ -315,9 +317,22 @@ class IMAP:
             command = "a02 EXPUNGE"
             code, msg = self.__send_encoded_msg(command)
             if code == "OK":
-                return True
+                number_of_mails = 0
+                # Again get the number of mails in mailbox
+                lines_arr = msg.splitlines()
+                for item in lines_arr:
+                    try:
+                        tokens = item.split(" ")
+                        if tokens[2] == "EXISTS":
+                            number_of_mails = int(tokens[1])
+                    except Exception as e:
+                        continue
+
+                return True, number_of_mails
+            else:
+                return False, 0
         else:
-            return False
+            return False, 0
 
 
 
@@ -686,14 +701,14 @@ if __name__ == "__main__":
     folders = imap.get_mailboxes()
     print(folders)
     num = imap.select_mailbox(folders['folders'][0])
-  
+    print(num)
     emails = imap.fetch_email_headers(num, 20)
     print(emails)
-    imap.delete_email(num)
-    imap.delete_email(1)
-    imap.delete_email(10)
-    # imap.close_mailbox()
-    num =   imap.select_mailbox(folders['folders'][2])
-    emails = imap.fetch_email_headers(num, 20)
-    print(emails)
+    # imap.delete_email(num)
+    # print(imap.delete_email(1))
+    # imap.delete_email(10)
+    # # imap.close_mailbox()
+    # num =   imap.select_mailbox(folders['folders'][2])
+    # emails = imap.fetch_email_headers(num, 20)
+    # print(emails)
    

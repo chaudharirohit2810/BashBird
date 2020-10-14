@@ -314,11 +314,18 @@ class EMAIL_LIST:
                 if self.__curr_confirm_index == 0:
                     self.__show_status_message("Deleting email....", isLoading=True)
                     try:
-                        isDeleted = self.__imap.delete_email(self.num - self.__arr_position)
+                        isDeleted, num = self.__imap.delete_email(self.num - self.__arr_position)
                         if not isDeleted:
                             raise Exception("Something went wrong! Mail deletion failed, please try again")
+
+                        # Set the new mail count
+                        self.num = num
+
+                        # Update the array
                         self.__main_list.pop(self.__arr_position)
                         self.__display_list.pop(self.__curr_position)
+                        
+
                         # Show mail sent successfully message
                         self.__show_status_message("Mail deleted Successfully", time_to_show=1)
                     except Exception as e:
