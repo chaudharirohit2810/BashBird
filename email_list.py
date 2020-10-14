@@ -242,6 +242,8 @@ class EMAIL_LIST:
         # TODO: Later also check the end of subject so date can be shifted to new line
         date_start = width - len(formatted_date) - 2
 
+        if len(subject.strip()) == 0:
+            subject = "(no subject)"
         
         # To show subject
         # First wrap the subject so that it can be shown on newline

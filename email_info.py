@@ -105,6 +105,9 @@ class EMAIL_INFO:
         rectangle(self.__stdscr, from_start + from_block_total, 0, from_start + from_block_total + subject_lines, w - 1)
         self.__stdscr.addstr(from_start + from_block_total, 2, " SUBJECT ")
 
+        if len(self.__subject.strip()) == 0:
+            self.__subject = "(no subject)"
+
         # used to divide subject in multiple lines
         wrapper = textwrap.TextWrapper(width=w - 3)
         elipsize = "....."
@@ -134,9 +137,6 @@ class EMAIL_INFO:
             for body in body_arr:
                 # ellipsize the text if it can't be fit into the box
                 if body_start > body_end:
-                    body = body[0:w-10] + elipsize
-                    self.__stdscr.addstr(body_start, 1, body)
-                    body_start += 1
                     break
                 self.__stdscr.addstr(body_start, 1, body)
                 body_start += 1

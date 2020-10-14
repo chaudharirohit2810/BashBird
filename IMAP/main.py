@@ -1,10 +1,6 @@
 from socket import *
-import ssl, quopri, re
+import ssl, quopri, re, unicodedata, os, base64
 from dotenv import load_dotenv
-import os
-from email.base64mime import body_encode as encode_64
-from email.base64mime import body_decode as decode_64
-import email as email_lib
 from bs4 import BeautifulSoup
 
 
@@ -239,6 +235,7 @@ class IMAP:
             boundary_id = None
             boundary_key = "boundary="
             boundary_id = main_header[main_header.find(boundary_key) + len(boundary_key):]
+            boundary_id = boundary_id[:main_header.find(';')]
             return boundary_id
 
 
@@ -267,13 +264,12 @@ class IMAP:
                 return body
             else:
                 raise Exception("Something went wrong! Body not fetched properly")
-                
 
-                        
+
+
+
 
                    
-        
-    
 
 
     # <-----------------------------------------------Utils----------------------------------------------------->
@@ -303,7 +299,7 @@ class IMAP:
                 # Receive message from server
                 recv_bytes = self.__main_socket.recv(1024)
 
-                temp_msg = recv_bytes.decode('unicode-escape', errors='ignore')
+                temp_msg = recv_bytes.decode()
                
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
@@ -353,6 +349,9 @@ class IMAP:
                 return False, "Request Failed"
 
     
+
+
+
     #<!------------------------------------------------Base Mail Headers---------------------------------------->
 
     '''Get individual mails from received'''
@@ -374,6 +373,42 @@ class IMAP:
                 ans.append(email) 
             index += 1  
         return ans
+
+
+    '''Decode subject if it is not in ascii'''
+    def __extract_text_from_encoded_words_syntax(self, encoded_words):
+        try:
+            temp = encoded_words[2:]
+
+            # Get the charset from encoded subject
+            i1 = temp.find("?")
+            charset = temp[:i1].lower()
+
+            temp = temp[i1:]
+
+            # Get the encoding type            
+            encoding = temp[1].upper()
+            
+
+            # GEt the main text
+            main_text = temp[3:]
+            i = 0
+
+
+            # This will be encoded string
+            ending_index = main_text.find("?=")
+            main_text = main_text[:ending_index]
+            
+            if encoding == "B":
+                main_text = base64.b64decode(main_text)
+            elif encoding == "Q":
+                main_text = quopri.decodestring(main_text)  
+
+            return main_text.decode(charset), encoded_words.find("?=") + 3
+
+        except Exception as e:
+            print(e)
+            return encoded_words
 
 
 
@@ -422,13 +457,32 @@ class IMAP:
             elif lines_arr[index].lower().startswith("from"):
                 mail_from = lines_arr[index][6:]
                 index += 1
+        main_subject = ""
 
-            try:
-                subject = quopri.decodestring(subject).decode()       
-            except Exception as e:
-                pass
+        # Check if the subject is in encoded words syntax
+        if subject.startswith("=?"):
+            # Normalize the data to ascii
+            while subject.startswith("=?"):
+                output, ending_index = self.__extract_text_from_encoded_words_syntax(subject)
+                main_subject += output
+                subject = subject[ending_index:]
+        else:
+            main_subject = subject
+
+        main_mail_from = ""
+        # Check if the date is in encoded words syntax
+        if mail_from.startswith("=?"):
+            # print(date)
+            while mail_from.startswith("=?"):
+                output, ending_index = self.__extract_text_from_encoded_words_syntax(mail_from)
+                main_mail_from += output
+                mail_from = mail_from[ending_index:]
         
-        return {'Subject': subject, 'Date': date, 'From': mail_from}
+        main_mail_from += mail_from
+                
+
+        # print(main_subject.strip())
+        return {'Subject': main_subject, 'Date': date, 'From': main_mail_from}
     
 
 
@@ -538,8 +592,7 @@ class IMAP:
         ans = ""
         
         for line in text.splitlines():
-            line = line.replace("=20", '')
-            if line.strip() != '':
+            if len(line.strip()) != 0:
                 ans += line.strip() + "\n"
         return ans
 
@@ -551,10 +604,12 @@ class IMAP:
     def __extract_text_from_html(self, body):
         text = ""
         try:
-            soup = BeautifulSoup(body, features="html.parser")
+            soup = BeautifulSoup(body, "lxml")
             for extras in soup(['script', 'style']):
                 extras.extract()
             text = soup.get_text()
+            # Normalize the data to ascii
+            text = unicodedata.normalize("NFKD",text)
         except:
             text = body
         ans = ""
