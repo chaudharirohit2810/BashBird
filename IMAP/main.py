@@ -169,10 +169,38 @@ class IMAP:
     # Arguements:
     # name      Name of mailbox
     def select_mailbox(self, name):
-        send = 'a02 SELECT {folder_name}'.format(folder_name = name)
-        code, msg = self.__send_encoded_msg(send)
+        command = 'a02 SELECT {folder_name}{new_line}'.format(folder_name = name, new_line=self.__MAIL_NEW_LINE)
+        self.__main_socket.send(command.encode())
+        msg = ""
+        success = True
         
-        if code != "OK":
+        # Receive the response
+        while 1:
+            try:
+                temp_msg = self.__main_socket.recv(1024).decode()
+                msg += temp_msg
+                flag = False
+                for line in temp_msg.splitlines():
+                    # print(line)
+                    words = line.split()
+                    try:
+                        if words[1] == "BAD" or words[1] == "NOT":
+                            success = False
+                            raise Exception("Hi")
+                        elif words[1] == "OK" and (words[2] == "[READ-WRITE]" or words[2] == "[READ-ONLY]"):
+                            # print(words)
+                            flag = True
+                            break
+                    except:
+                        pass
+                if flag:
+                    break
+            except Exception as e:
+                # print(e)
+                break
+        # print(msg)
+        
+        if not success:
             raise Exception('Invalid mailbox name')
             # return {self.__success: False, 'msg': "Invalid mailbox name", 'number_of_mails': -1}
         else:
@@ -188,6 +216,16 @@ class IMAP:
                     continue
 
             return number_of_mails
+
+
+    '''To deselect the selected mailbox'''
+    def close_mailbox(self):
+        command = "a02 CLOSE"
+        code, msg = self.__send_encoded_msg(command)
+        if code == "OK":
+            return True
+        else:
+            return False
 
     
 
@@ -267,6 +305,22 @@ class IMAP:
 
 
 
+    '''To delete mail from mailbox'''
+    # Arguements:
+    # index: Index of mail to fetch
+    def delete_email(self, index):
+        command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)"
+        code, msg = self.__send_encoded_msg(command)
+        if code == "OK":
+            command = "a02 EXPUNGE"
+            code, msg = self.__send_encoded_msg(command)
+            if code == "OK":
+                return True
+        else:
+            return False
+
+
+
 
 
                    
@@ -299,7 +353,7 @@ class IMAP:
                 # Receive message from server
                 recv_bytes = self.__main_socket.recv(1024)
 
-                temp_msg = recv_bytes.decode()
+                temp_msg = recv_bytes.decode(errors='ignore')
                
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
@@ -340,7 +394,6 @@ class IMAP:
                     
                     # Return them
                     return True, reply
-
                 msg += temp_msg
             except Exception as e:
                 print(e)
@@ -634,6 +687,13 @@ if __name__ == "__main__":
     print(folders)
     num = imap.select_mailbox(folders['folders'][0])
   
+    emails = imap.fetch_email_headers(num, 20)
+    print(emails)
+    imap.delete_email(num)
+    imap.delete_email(1)
+    imap.delete_email(10)
+    # imap.close_mailbox()
+    num =   imap.select_mailbox(folders['folders'][2])
     emails = imap.fetch_email_headers(num, 20)
     print(emails)
    
