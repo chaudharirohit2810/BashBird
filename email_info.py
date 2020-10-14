@@ -108,6 +108,7 @@ class EMAIL_INFO:
         if len(self.__subject.strip()) == 0:
             self.__subject = "(no subject)"
 
+
         # used to divide subject in multiple lines
         wrapper = textwrap.TextWrapper(width=w - 3)
         elipsize = "....."

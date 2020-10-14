@@ -293,7 +293,7 @@ class Write_Mail_UI:
                     # Send mail using SMTP class and go back
                     # TODO: Check if subject or body is not empty
                     # Show sending mail status message
-                    self.__show_staus_message("Sending email....", isLoading=True)
+                    self.__show_status_message("Sending email....", isLoading=True)
                     try:
                         self.__check_validation()
                         # Authenticate
@@ -302,14 +302,14 @@ class Write_Mail_UI:
                         smtp.send_email(self.__email_to, self.__subject, self.__body)
 
                         # Show mail sent successfully message
-                        self.__show_staus_message("Mail sent Successfully", time_to_show=1.5)
+                        self.__show_status_message("Mail sent Successfully", time_to_show=1.5)
 
                         self.__is_mail_sent = True
 
                         # Quit from smtp server
                         smtp.quit()
                     except Exception as e:
-                        self.__show_staus_message(str(e), 2)
+                        self.__show_status_message(str(e), 2)
 
                 self.__set_default_screen(self.__title, isMain= True)
                 break
@@ -327,7 +327,7 @@ class Write_Mail_UI:
     # time_to_show: Time for which message needs to be shown
     # isLoading: If the text is related to loading
      # TODO: Implement loading also
-    def __show_staus_message(self, msg, time_to_show = -1, isLoading=False):
+    def __show_status_message(self, msg, time_to_show = -1, isLoading=False):
         # Blink the text if it is in loading state
         h, w = self.__stdscr.getmaxyx()
         if isLoading:

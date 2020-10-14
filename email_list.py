@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from IMAP.main import IMAP
 from Title import Title
 from email_info import EMAIL_INFO
+from threading import Thread
+from curses.textpad import rectangle
 
 
 class EMAIL_LIST:
@@ -21,6 +23,7 @@ class EMAIL_LIST:
     num = 0
     emails = None
     exception = ""
+    __status_msg = ""
 
     options = [
         {'key': 'D', 'msg': 'Delete Mail'},
@@ -30,6 +33,13 @@ class EMAIL_LIST:
     ]
 
     __main_list = []
+    __display_list = []
+
+    #Confirm Email Variables
+    __curr_confirm_index = 0
+    # TODO: Later changes this array to title and function dictionary
+    __confirm_menu =["YES", "NO"]
+
 
     #<!------------------------------------------------Functions-----------------------------------------------------!>
     '''Constructor of class'''
@@ -60,6 +70,8 @@ class EMAIL_LIST:
             self.__stdscr.refresh()
 
 
+
+    #<!----------------------------------------------- LOGIC -------------------------------------------------------->
 
     '''To fetch emails from imap server using IMAP class'''
     # TODO: Run this function in thread
@@ -107,11 +119,11 @@ class EMAIL_LIST:
     '''To setup the main layout of page with scrollable behaviour'''
     def __set_main_layout(self):
 
-
         key = 0
         arr_start = 0
         # Initially setup the list to get maximum mails that can be shown on single page
-        max_len = self.__set_email_list(self.__main_list)
+        self.__display_list = self.__main_list
+        max_len = self.__set_email_list()
 
         # Loop until key is 'q'
         while key != ord('q'):
@@ -140,6 +152,10 @@ class EMAIL_LIST:
                         # Again reset the current position
                         self.__curr_position = 0
 
+            # If d is pressed
+            elif key == ord('d'):
+                self.__set_confirm_email_bar()
+
             # When enter is pressed
             elif key == curses.KEY_ENTER or key in [10, 13]:
                 # Show the email info component which will show details of email
@@ -153,37 +169,20 @@ class EMAIL_LIST:
             arr_end = min(arr_start + max_len, len(self.__main_list))
 
             # Show the email list
-            max_len = max(self.__set_email_list(self.__main_list[arr_start:arr_end]), max_len)
-
-
-    '''To show message when mailbox is empty or some error occured'''
-    def __show_message(self, msg):
-        h, w = self.__stdscr.getmaxyx()
-        
-        key = 0
-        while key != ord('q'):
-            # Clear the screen
-            self.__stdscr.clear()
-            self.__stdscr.attron(curses.A_BOLD)
-            self.__stdscr.addstr(h // 2, w // 2 - len(msg) // 2, msg)
-            self.__stdscr.attroff(curses.A_BOLD)
-
-            # Refresh the screen
-            self.__stdscr.refresh()
+            self.__display_list = self.__main_list[arr_start:arr_end]
+            max_len = max(self.__set_email_list(), max_len)
 
 
 
-            key = self.__stdscr.getch()
-
-        
-        
 
 
-
+    #<!-------------------------------------------------EMAIL LIST UI --------------------------------------------->        
+    
     '''To show the list of emails'''
     # Arguements:
     # list: List of emails
-    def __set_email_list(self, list):
+    # isConfirm: If the bottom bar is confirm bottom bar menu or not
+    def __set_email_list(self,isConfirm=False):
 
         # Get the height and width of standard screen
         h, w = self.__stdscr.getmaxyx()
@@ -199,18 +198,28 @@ class EMAIL_LIST:
         i = 0
 
         # Loop over the list until the screen or list is ended
-        while start < h - 5 and i < len(list):
+        while start < h - 5 and i < len(self.__display_list):
             # Check if the list item is focused 
             is_focused = i == self.__curr_position
 
             # Show the email
-            start = self.__set_mail_item(start, list[i]['Subject'],
-                                         list[i]['From'],
-                                         list[i]['Date'], h, w, is_focused=is_focused)
+            start = self.__set_mail_item(start, self.__display_list[i]['Subject'],
+                                         self.__display_list[i]['From'],
+                                         self.__display_list[i]['Date'], h, w, is_focused=is_focused)
             i += 1
 
-        # Setup the bottom bar as screen was cleared
-        self.__setup_bottom_bar()
+
+        # Setup the confirm email bottom menu if isConfirm is True
+        if isConfirm:
+            rectangle(self.__stdscr, h - 4, 0, h - 1, w - 2)
+            title = " Do you want to delete email? ".upper()
+            self.__stdscr.attron(curses.A_BOLD)
+            self.__stdscr.addstr(h - 4, 1, title)
+            self.__stdscr.attroff(curses.A_BOLD)
+            self.__display_confirm_bottom_bar_menu()
+        else:
+            # Setup the bottom bar as screen was cleared
+            self.__setup_bottom_bar()
 
         # Refresh the layout
         self.__stdscr.refresh()
@@ -284,9 +293,118 @@ class EMAIL_LIST:
         return start
 
 
+    '''Setup confirm email bar'''
+    def __set_confirm_email_bar(self):
+        h, w = self.__stdscr.getmaxyx()
+        self.__stdscr.clear()
+        self.__set_email_list(isConfirm=True)
+        
+
+        
+        while 1:
+            key = self.__stdscr.getch()
+
+            if key == curses.KEY_UP and self.__curr_confirm_index != 0:
+                self.__curr_confirm_index -= 1
+            elif key == curses.KEY_DOWN and self.__curr_confirm_index != len(self.__confirm_menu) - 1:
+                self.__curr_confirm_index += 1
+
+            # TODO: Do the functionality according to choice of user
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                if self.__curr_confirm_index == 0:
+                    self.__show_status_message("Deleting email....", isLoading=True)
+                    try:
+                        isDeleted = self.__imap.delete_email(self.num - self.__arr_position)
+                        if not isDeleted:
+                            raise Exception("Something went wrong! Mail deletion failed, please try again")
+                        self.__main_list.pop(self.__arr_position)
+                        self.__display_list.pop(self.__curr_position)
+                        # Show mail sent successfully message
+                        self.__show_status_message("Mail deleted Successfully", time_to_show=1)
+                    except Exception as e:
+                        self.__show_status_message(str(e), 2)
+                
+                self.__set_email_list()
+                break
+
+            self.__set_email_list(isConfirm=True)
+
+
+
+    '''To display confirm email bottom bar'''
+    # TODO: Later get title and functionality in array (for now only title is present)
+    def __display_confirm_bottom_bar_menu(self):
+        h, _ = self.__stdscr.getmaxyx()
+        
+        start_h = h - 3
+        for index, item in enumerate(self.__confirm_menu):
+            
+            y_pos = start_h + index
+            # Check if index is of currently selected item if yes make its background white
+            if self.__curr_confirm_index == index:
+                self.__stdscr.attron(curses.color_pair(1))
+
+            # Print string on screen
+            self.__stdscr.addstr(y_pos, 2, item)
+
+            if self.__curr_confirm_index == index:
+                self.__stdscr.attroff(curses.color_pair(1))
+        
+        self.__stdscr.refresh()
+
+
+
+    #<!-------------------------------------------------UI Utils---------------------------------------------------->
+
+    '''To show message when mailbox is empty or some error occured'''
+    # Arguements:
+    # msg: Message to show
+    def __show_message(self, msg):
+        h, w = self.__stdscr.getmaxyx()
+        
+        key = 0
+        while key != ord('q'):
+            # Clear the screen
+            self.__stdscr.clear()
+            self.__stdscr.attron(curses.A_BOLD)
+            self.__stdscr.addstr(h // 2, w // 2 - len(msg) // 2, msg)
+            self.__stdscr.attroff(curses.A_BOLD)
+            # Refresh the screen
+            self.__stdscr.refresh()
+            key = self.__stdscr.getch()
+
+
     '''To setup bottom bar'''
     def __setup_bottom_bar(self):
         BottomBar(self.__stdscr, self.options)
+
+
+    '''To show status message while authenticating'''
+    # Arguements:
+    # msg: Message to show
+    # time_to_show: Time for which message needs to be shown
+    # isLoading: If the text is related to loading
+     # TODO: Implement loading also
+    def __show_status_message(self, msg, time_to_show = -1, isLoading=False):
+        h, w = self.__stdscr.getmaxyx()
+
+        # Blink the text if it is in loading state
+        if isLoading:
+            self.__stdscr.attron(curses.A_BLINK)
+
+        self.__stdscr.attron(curses.A_STANDOUT)
+        self.__stdscr.attron(curses.A_BOLD)
+        self.__stdscr.addstr(h - 5, w // 2 - len(msg) // 2, " " + str(msg) +  " ")
+        self.__stdscr.refresh()
+        if time_to_show != -1:
+            time.sleep(time_to_show)
+
+        # Disable attributes
+        self.__stdscr.attroff(curses.A_STANDOUT)
+        self.__stdscr.attroff(curses.A_BOLD)
+        if isLoading:
+            self.__stdscr.attroff(curses.A_BLINK)
+
 
 
 def main(stdscr):
