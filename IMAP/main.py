@@ -155,7 +155,7 @@ class IMAP:
             for i in range(index + 1, len(tokens)):
                 name += tokens[i]
                 name += " "
-            print(name)
+            # print(name)
             if name[:-1] != '"[Gmail]"':
                 folders.append(name[:-1])
 
@@ -270,12 +270,18 @@ class IMAP:
             " (BODY[HEADER.FIELDS (Content-Type)])" + self.__MAIL_NEW_LINE
         self.__main_socket.send(command_boundary_id.encode())
         success, msg = self.__get_whole_message()
+        
         if success:
             main_header = '\n'.join(line for line in msg.splitlines()[1:-2])
             boundary_id = None
             boundary_key = "boundary="
+            if main_header.find(boundary_key) == -1:
+                return None
+
             boundary_id = main_header[main_header.find(boundary_key) + len(boundary_key):]
+
             boundary_id = boundary_id[:main_header.find(';')]
+            
             return boundary_id
 
 
@@ -284,26 +290,57 @@ class IMAP:
     # Arguements:
     # index: Index of mail to fetch
     def fetch_whole_body(self, index):
+        # Fetch the boundary id
         boundary_id = self.get_boundary_id(index)
         body = ""
-        if boundary_id != None:
-            command_body = "a02 FETCH " + str(index) + \
+
+        # Fetch the body
+        command_body = "a02 FETCH " + str(index) + \
                 " (BODY[text])" + self.__MAIL_NEW_LINE
-            self.__main_socket.send(command_body.encode())
-            success, msg = self.__get_whole_message()
-            if success:
-                # print(msg)
+        self.__main_socket.send(command_body.encode())
+        success, msg = self.__get_whole_message()
+        # print(msg, "\n" * 10)
+        if success:
+            # print("Boundary_id", boundary_id, "\n" * 4)
+            # If there is no boundary id then there is simple single part text body
+            if boundary_id != None:
+                # boundary_id = ""
                 body_list = self.__get_email_body_list(boundary_id, msg)
                 
                 for item in body_list:
-                
                     header, main = self.__separate_body(item)
+                    # print(main)
                     headers = self.__get_body_headers(header)
-                    main = self.__get_cleaned_up_body(headers, main)
+                    # print(headers, "\n" * 6)
+                    # If the content type is multipart/arternative then it contains two alternative bodies and we need only one
+                    if headers[0] == "multipart/alternative":
+                        # Again split the body as it contains two bodies
+                        inner_body_list = self.__get_email_body_list(headers[2], item)
+                        try:
+                            header, main = self.__separate_body(inner_body_list[0])
+                            
+                            headers = self.__get_body_headers(header)
+                            
+                            main = self.__get_cleaned_up_body(headers, main)
+                        except:
+                            main = ""
+                            pass
+
+                    elif headers[0] in ['text/plain', 'text/html']:
+                        main = self.__get_cleaned_up_body(headers, main)
+                    else:
+                        main = ""
                     body += main + "\n"
+
                 return body
+
             else:
-                raise Exception("Something went wrong! Body not fetched properly")
+                msg = '\n'.join(line for line in msg.splitlines()[1:-1])
+                return msg.strip('\r\t\n')
+        # Return the error if request fails
+        else:
+            raise Exception("Something went wrong! Body not fetched properly")
+       
 
 
 
@@ -325,7 +362,7 @@ class IMAP:
                         tokens = item.split(" ")
                         if tokens[2] == "EXISTS":
                             number_of_mails = int(tokens[1])
-                    except Exception as e:
+                    except:
                         continue
 
                 return True, number_of_mails
@@ -460,7 +497,6 @@ class IMAP:
 
             # GEt the main text
             main_text = temp[3:]
-            i = 0
 
 
             # This will be encoded string
@@ -629,8 +665,15 @@ class IMAP:
         content_encoding=""
         content_type_key = "Content-Type:"
         content_encoding_key = "Content-Transfer-Encoding:"
+        boundary_key = "boundary="
+        boundary=None
 
         for line in header.splitlines():
+            if line.find(boundary_key) != -1:
+                # print(line)
+                boundary = line[line.find(boundary_key) + len(boundary_key):]
+                boundary = boundary[:boundary.find(';')]
+                
             # To find the content type
             if line.startswith(content_type_key):
                 start = line.find(content_type_key) + len(content_type_key)
@@ -641,7 +684,7 @@ class IMAP:
             elif line.startswith(content_encoding_key):
                 content_encoding = line[line.find(content_encoding_key) + len(content_encoding_key):].strip()
 
-        return content_type, content_encoding
+        return content_type, content_encoding, boundary
 
 
     
@@ -650,6 +693,7 @@ class IMAP:
     # header: contains content-type and content-transfer encoding
     # body: Body of mail
     def __get_cleaned_up_body(self, header, body):
+
         text = body
         text = self.__extract_text_from_html(body)
         try:
@@ -658,10 +702,8 @@ class IMAP:
             pass
         
         ans = ""
-        
-        for line in text.splitlines():
-            if len(line.strip()) != 0:
-                ans += line.strip() + "\n"
+        ans = '\n'.join(line for line in text.splitlines() if line)
+        ans = ans.strip('\r\t\n')
         return ans
 
 
@@ -699,11 +741,13 @@ if __name__ == "__main__":
     old_pass = os.getenv('PASSWORD')
     imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
-    print(folders)
-    num = imap.select_mailbox(folders['folders'][0])
-    print(num)
+    # print(folders)
+    num = imap.select_mailbox(folders['folders'][5])
+    # print(num)
     emails = imap.fetch_email_headers(num, 20)
-    print(emails)
+    # print(emails)
+    body = imap.fetch_whole_body(num)
+    print(body)
     # imap.delete_email(num)
     # print(imap.delete_email(1))
     # imap.delete_email(10)

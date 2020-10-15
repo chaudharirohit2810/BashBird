@@ -325,7 +325,6 @@ class EMAIL_LIST:
                         self.__main_list.pop(self.__arr_position)
                         self.__display_list.pop(self.__curr_position)
                         
-
                         # Show mail sent successfully message
                         self.__show_status_message("Mail deleted Successfully", time_to_show=1)
                     except Exception as e:
