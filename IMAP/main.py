@@ -299,9 +299,9 @@ class IMAP:
                 " (BODY[text])" + self.__MAIL_NEW_LINE
         self.__main_socket.send(command_body.encode())
         success, msg = self.__get_whole_message()
-        # print(msg, "\n" * 10)
+       
         if success:
-            # print("Boundary_id", boundary_id, "\n" * 4)
+            
             # If there is no boundary id then there is simple single part text body
             if boundary_id != None:
                 # boundary_id = ""
@@ -309,13 +309,14 @@ class IMAP:
                 
                 for item in body_list:
                     header, main = self.__separate_body(item)
-                    # print(main)
+                    
                     headers = self.__get_body_headers(header)
-                    # print(headers, "\n" * 6)
+
                     # If the content type is multipart/arternative then it contains two alternative bodies and we need only one
-                    if headers[0] == "multipart/alternative":
+                    if headers[0].lower() == "multipart/alternative":
                         # Again split the body as it contains two bodies
                         inner_body_list = self.__get_email_body_list(headers[2], item)
+                        
                         try:
                             header, main = self.__separate_body(inner_body_list[0])
                             
@@ -326,15 +327,17 @@ class IMAP:
                             main = ""
                             pass
 
-                    elif headers[0] in ['text/plain', 'text/html']:
+                    elif headers[0].lower() in ['text/plain', 'text/html']:
                         main = self.__get_cleaned_up_body(headers, main)
                     else:
                         main = ""
+
                     body += main + "\n"
 
                 return body
 
             else:
+                msg = self.__extract_text_from_html(msg)
                 msg = '\n'.join(line for line in msg.splitlines()[1:-1])
                 return msg.strip('\r\t\n')
         # Return the error if request fails
@@ -663,25 +666,26 @@ class IMAP:
         # print(header)
         content_type = ""
         content_encoding=""
-        content_type_key = "Content-Type:"
-        content_encoding_key = "Content-Transfer-Encoding:"
+        content_type_key = "content-type:"
+        content_encoding_key = "content-transfer-encoding:"
         boundary_key = "boundary="
         boundary=None
 
         for line in header.splitlines():
+            line = line.lower()
+            
             if line.find(boundary_key) != -1:
-                # print(line)
                 boundary = line[line.find(boundary_key) + len(boundary_key):]
                 boundary = boundary[:boundary.find(';')]
                 
             # To find the content type
-            if line.startswith(content_type_key):
+            if line.find(content_type_key) != -1:
                 start = line.find(content_type_key) + len(content_type_key)
                 content_type = line[start:]
                 content_type = content_type[:content_type.find(';')].strip()
             
             # To find the content transfer encoding
-            elif line.startswith(content_encoding_key):
+            elif line.find(content_encoding_key) != -1:
                 content_encoding = line[line.find(content_encoding_key) + len(content_encoding_key):].strip()
 
         return content_type, content_encoding, boundary
@@ -693,9 +697,13 @@ class IMAP:
     # header: contains content-type and content-transfer encoding
     # body: Body of mail
     def __get_cleaned_up_body(self, header, body):
-
         text = body
-        text = self.__extract_text_from_html(body)
+        if header[1].lower().strip() == "base64":
+            text = base64.b64decode(text).decode('utf-8')
+            
+        
+        text = self.__extract_text_from_html(text)
+
         try:
             text = quopri.decodestring(text).decode()       
         except Exception as e:
@@ -704,6 +712,7 @@ class IMAP:
         ans = ""
         ans = '\n'.join(line for line in text.splitlines() if line)
         ans = ans.strip('\r\t\n')
+
         return ans
 
 
@@ -720,7 +729,7 @@ class IMAP:
             text = soup.get_text()
             # Normalize the data to ascii
             text = unicodedata.normalize("NFKD",text)
-        except:
+        except Exception as e:
             text = body
         ans = ""
         for line in text.splitlines():
@@ -742,11 +751,11 @@ if __name__ == "__main__":
     imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
     # print(folders)
-    num = imap.select_mailbox(folders['folders'][5])
+    num = imap.select_mailbox(folders['folders'][0])
     # print(num)
-    emails = imap.fetch_email_headers(num, 20)
+    # emails = imap.fetch_email_headers(num, 20)
     # print(emails)
-    body = imap.fetch_whole_body(num)
+    body = imap.fetch_whole_body(num - 6)
     print(body)
     # imap.delete_email(num)
     # print(imap.delete_email(1))

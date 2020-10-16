@@ -73,7 +73,7 @@ class Write_Mail_UI:
             self.__set_default_screen(self.__title, isMain= True)
 
             self.__set_main_layout()
-            print(len(self.__email_to))
+            
             self.__key = self.__stdscr.getch()
 
             # TODO: Setup every string according to width and height 
@@ -133,7 +133,7 @@ class Write_Mail_UI:
 
         # Divide body into parts
         body_arr = wrapper.wrap(self.__body)
-        max_lines = (h - 5) - (from_block_total + from_start + subject_lines + 1) - 2
+        max_lines = (h - 5) - (from_block_total + from_start + subject_lines + 1)
         for index, body in enumerate(body_arr):
             # ellipsize the text if it can't be fit into the box
             if index == max_lines:
