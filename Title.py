@@ -26,10 +26,10 @@ class Title:
             temp_title += " "
 
         # Print the title
-        self.__stdscr.attron(curses.color_pair(1))
+        self.__stdscr.attron(curses.A_STANDOUT)
         self.__stdscr.attron(curses.A_BOLD)
         self.__stdscr.addstr(0, 0, temp_title)
         self.__stdscr.attroff(curses.A_BOLD)
-        self.__stdscr.attroff(curses.color_pair(1))
+        self.__stdscr.attroff(curses.A_STANDOUT)
 
         self.__stdscr.refresh()

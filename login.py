@@ -5,6 +5,7 @@ from SMTP.main import SEND_MAIL
 from threading import Thread
 from main_menu import Main_Menu
 from login_instructions import Instructions
+from Title import Title
 
 
 
@@ -49,7 +50,7 @@ class LOGIN_UI:
     # isEdit: If none don't show save message else show save message based on True or False value
     def __setup_layout(self, email, password, isEdit = None):
         self.__stdscr.clear()
-
+        Title(self.__stdscr, "LOGIN")
         # Setting up title and padding rectangle
         rectangle(self.__stdscr, self.__y_start - 3, self.__x_start - 4, self.__y_end , self.__x_end + 6)
         title = " Login to your account ".upper()
@@ -133,9 +134,12 @@ class LOGIN_UI:
         key = 1
         email = ""
         password = ""
+        Title(self.__stdscr, "LOGIN")
+        self.__show_staus_message("Please read login instructions before logging in!!", time_to_show=2)
         while key != ord('q'):
             
-            key = self.__stdscr.getch()
+            
+            
 
             # If the key is e then make the email box active
             if key == ord('e'):
@@ -148,7 +152,7 @@ class LOGIN_UI:
             elif key == ord('l'):
                 # Authenticate
                 self.__authenticate(email, password)
-                
+
             # Show login instructions
             elif key == ord('i'):
                 Instructions(self.__stdscr)
@@ -156,8 +160,9 @@ class LOGIN_UI:
             # This is to refresh the layout when user resizes the terminal
             self.__set_values()
             self.__setup_layout(email, "*" * len(password))    
-
+            
             self.__stdscr.refresh()
+            key = self.__stdscr.getch()
         sys.exit()
 
 
