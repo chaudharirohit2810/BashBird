@@ -48,10 +48,12 @@ class Instructions:
 
         while key != ord('q'):
             h, w = self.__stdscr.getmaxyx()
+
             try:
                 
                 wrapper = textwrap.TextWrapper(width=w - 3)
                 self.__stdscr.clear()
+                Title(self.__stdscr, "LOGIN INSTRUCTIONS")
                 start = self.__setup_array_text(
                     wrapper, w, 2, self.__app_password, " Login Using App Password (Recommended):  ")
                 start = self.__setup_array_text(
