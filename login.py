@@ -4,6 +4,7 @@ from BottomBar import BottomBar
 from SMTP.main import SEND_MAIL
 from threading import Thread
 from main_menu import Main_Menu
+from login_instructions import Instructions
 
 
 
@@ -147,6 +148,10 @@ class LOGIN_UI:
             elif key == ord('l'):
                 # Authenticate
                 self.__authenticate(email, password)
+                
+            # Show login instructions
+            elif key == ord('i'):
+                Instructions(self.__stdscr)
 
             # This is to refresh the layout when user resizes the terminal
             self.__set_values()
