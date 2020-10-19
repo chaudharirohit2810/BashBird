@@ -2,8 +2,7 @@ from IMAP.main import IMAP
 from loading import Loading
 from menu import Menu
 from dotenv import load_dotenv
-import os
-import curses
+import os, curses, getpass
 from email_list import EMAIL_LIST
 
 class Show_Folders:
@@ -13,7 +12,11 @@ class Show_Folders:
         self.__stdscr = stdscr
         loading = Loading(stdscr)
         loading.start()
-        load_dotenv('./.env')
+        # Get the environment filepath
+        user = getpass.getuser()
+        dir_path = '/home/'+user+'/.termmail'
+        env_path = dir_path + "/.env"
+        load_dotenv(env_path)
         
         
         try:

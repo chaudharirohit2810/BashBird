@@ -1,4 +1,4 @@
-import curses, textwrap, os, time, re
+import curses, textwrap, os, time, re, getpass
 from curses.textpad import Textbox, rectangle
 from BottomBar import BottomBar
 from dotenv import load_dotenv
@@ -51,7 +51,11 @@ class Write_Mail_UI:
     # Stdscr: Standard screen of curses
     # TODO: Later will need to take email_from from file
     def __init__(self, stdscr):
-        load_dotenv('./.env')
+        # Get the environment filepath
+        user = getpass.getuser()
+        dir_path = '/home/'+user+'/.termmail'
+        env_path = dir_path + "/.env"
+        load_dotenv(env_path)
         curses.curs_set(0)
         self.__stdscr = stdscr
         self.__stdscr.border(0)

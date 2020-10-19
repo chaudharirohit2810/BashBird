@@ -1,9 +1,18 @@
-import curses
-import time, os
+import curses, time, os, getpass, sys
 from login import LOGIN_UI
 from dotenv import load_dotenv
 from SMTP.main import SEND_MAIL
 from main_menu import Main_Menu
+
+'''To create directory which stores configuration file'''
+def createDirectory(dir_path):
+    try:
+        os.mkdir(dir_path)
+    except FileExistsError as e:
+        pass
+    except Exception as e:
+        print(e)
+        sys.exit()
 
 '''To check if user is already logged in and authenticates according to it'''
 # TODO: Decode the email and password as they will be encrypted later
@@ -66,7 +75,17 @@ def show_main_intro(stdscr):
 
 def main(stdscr):
     curses.curs_set(0)
-    load_dotenv('./.env')
+    
+    # Get username
+    user = getpass.getuser()
+
+    # Mail directory path
+    dir_path = '/home/'+user+'/.termmail'
+
+    # Environment file
+    env_path = dir_path + "/.env"
+    load_dotenv(env_path)
+
     is_authenticated = show_main_intro(stdscr)
     # If the user is already authenticated then go to main menu
     if is_authenticated == True:
