@@ -1,4 +1,4 @@
-import curses, time, sys
+import curses, time, sys, getpass
 from curses.textpad import rectangle, Textbox
 from BottomBar import BottomBar
 from SMTP.main import SEND_MAIL
@@ -86,21 +86,46 @@ class LOGIN_UI:
 
     '''Edit box for login and password'''
     def __edit_box(self, email, password, posy, posx, isPass = False):
-        curses.curs_set(1)
+        
         # TODO: Use isPass to show asterisk for password
         nol = 1
         noc = 40
         editwin = curses.newwin(nol, noc, posy, posx)
         self.__setup_layout(email, password, isPass)
         if isPass:
-            editwin.insstr(password)
+            curses.noecho()
+            
+            ch = self.__stdscr.getch()
+            password = password
+            password_asterisk = "*" * len(password)
+            editwin.insstr(password_asterisk)
+            
+            while ch != curses.ascii.BEL:
+                if ch == curses.KEY_BACKSPACE:
+                    try:
+                        password = password[:-1]
+                    except:
+                        pass
+                else:
+                    password += chr(ch)
+                password_asterisk = "*" * len(password)
+                editwin.clear()
+                editwin.insstr(password_asterisk)
+                editwin.refresh()
+                ch = self.__stdscr.getch()
+
+            return password
         else:
+            curses.curs_set(1)
             editwin.insstr(email)
+        
         self.__stdscr.refresh()
         box_email = Textbox(editwin)
         box_email.stripspaces = True
+        
         box_email.edit()
         curses.curs_set(0)
+        curses.echo()
         return box_email.gather()
 
 
@@ -117,11 +142,11 @@ class LOGIN_UI:
 
             # If the key is e then make the email box active
             if key == ord('e'):
-                email = self.__edit_box(email, password, self.__y_start + 1, self.__x_start + 2)
+                email = self.__edit_box(email, "*" * len(password), self.__y_start + 1, self.__x_start + 2)
             
             # If the key is p then make the password box active
             elif key == ord('p'):
-                password = self.__edit_box(email, password, self.__y_start + 5, self.__x_start + 2, isPass=True)
+                password = self.__edit_box(email, "*" * len(password), self.__y_start + 5, self.__x_start + 2, isPass=True)
             
             elif key == ord('l'):
                 # Authenticate
@@ -129,7 +154,7 @@ class LOGIN_UI:
 
             # This is to refresh the layout when user resizes the terminal
             self.__set_values()
-            self.__setup_layout(email, password)    
+            self.__setup_layout(email, "*" * len(password))    
 
             self.__stdscr.refresh()
         sys.exit()
@@ -160,7 +185,12 @@ class LOGIN_UI:
     # email : Email of user
     # password: Password of user
     def __store_in_file(self, email, password):
-        fi = open(".env", "w+")
+        # Get the environment filepath
+        user = getpass.getuser()
+        dir_path = '/home/'+user+'/.termmail'
+        env_path = dir_path + "/.env"
+
+        fi = open(env_path, "w+")
         fi.write("EMAIL=" + email + "\n")
         fi.write("PASSWORD=" + password + "\n")
         fi.close()
