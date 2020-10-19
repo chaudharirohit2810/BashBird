@@ -1,4 +1,4 @@
-import curses, time, sys, getpass
+import curses, time, sys, getpass   
 from curses.textpad import rectangle, Textbox
 from BottomBar import BottomBar
 from SMTP.main import SEND_MAIL
@@ -29,7 +29,7 @@ class LOGIN_UI:
         {'key': 'e', 'msg': 'Edit email'},
         {'key': 'p', 'msg': 'Enter password'},
         {'key': 'l', 'msg': 'Login'},
-        {'key': 'q', 'msg': 'Exit program'},
+        {'key': 'q', 'msg': 'Exit'},
         {'key': 'i', 'msg': 'Show Login Instructions'}
     ]
 
@@ -93,7 +93,6 @@ class LOGIN_UI:
         editwin = curses.newwin(nol, noc, posy, posx)
         self.__setup_layout(email, password, isPass)
         if isPass:
-            curses.noecho()
             
             ch = self.__stdscr.getch()
             password = password
@@ -118,15 +117,12 @@ class LOGIN_UI:
         else:
             curses.curs_set(1)
             editwin.insstr(email)
-        
-        self.__stdscr.refresh()
-        box_email = Textbox(editwin)
-        box_email.stripspaces = True
-        
-        box_email.edit()
-        curses.curs_set(0)
-        curses.echo()
-        return box_email.gather()
+            editwin.refresh()
+            box_email = Textbox(editwin)
+            box_email.stripspaces = True
+            box_email.edit()
+            curses.curs_set(0)
+            return box_email.gather()
 
 
     '''Main function which setups the whole login page'''
@@ -168,6 +164,7 @@ class LOGIN_UI:
         # Show the authenticating message
         self.__show_staus_message("Authenticating", isLoading=True)
         try:
+            self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
             SEND_MAIL(email, password)
             self.__store_in_file(email, password)
@@ -177,7 +174,7 @@ class LOGIN_UI:
             main_menu.show()
 
         except Exception as e:
-            self.__show_staus_message(str(e), time_to_show=4)
+            self.__show_staus_message(str(e), time_to_show=3)
 
 
     '''To store email and password in separate file'''
@@ -220,7 +217,12 @@ class LOGIN_UI:
 
         if isLoading:
             self.__stdscr.attroff(curses.A_BLINK)
-        
+
+
+    def __is_valid(self, email, password):
+        if len(email.strip()) == 0 or len(password.strip()) == 0:
+            raise Exception("Please enter valid email and password")
+
 
 
 

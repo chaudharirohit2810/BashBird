@@ -181,7 +181,9 @@ class Menu:
     '''When enter is pressed on particular item'''
     def __on_enter_pressed(self):
         
-        if self.__menu[self.__curr_index]['args'] != None:
+        if self.__menu[self.__curr_index]['args'] == "STDSCR_NR":
+            self.__menu[self.__curr_index]['Function']()
+        elif self.__menu[self.__curr_index]['args'] != None:
             arguements = self.__menu[self.__curr_index]['args']
             arg1, arg2 = arguements
             self.__menu[self.__curr_index]['Function'](self.__stdscr, arg1, arg2)

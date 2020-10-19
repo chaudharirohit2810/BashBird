@@ -125,7 +125,7 @@ class IMAP:
 
         # Check if second element of tokens is OK if not raise exception
         if imap_msg_tokens[1] != "OK":
-            raise Exception("Invalid username or password")
+            raise Exception("Invalid email or password")
 
 
 
