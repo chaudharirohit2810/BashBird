@@ -24,8 +24,6 @@ class Show_Folders:
             password = os.getenv('PASSWORD')
             imap = IMAP(email, password)
             folders = imap.get_mailboxes()
-            folders = folders['folders']
-            print(folders)
             options = []
             for item in folders:
                 options.append({'title': item[1:-1], 'Function': EMAIL_LIST, 'args': (item, imap)})

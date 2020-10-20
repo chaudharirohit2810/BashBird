@@ -1,5 +1,5 @@
 from socket import *
-import ssl, quopri, re, unicodedata, os, base64
+import ssl, quopri, re, unicodedata, os, base64, getpass
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 
@@ -161,7 +161,7 @@ class IMAP:
 
 
         # Return list of folders except last attribute
-        return {self.__success: True, 'folders': folders}
+        return folders
 
     
 
@@ -176,27 +176,23 @@ class IMAP:
         
         # Receive the response
         while 1:
-            try:
-                temp_msg = self.__main_socket.recv(1024).decode()
-                msg += temp_msg
-                flag = False
-                for line in temp_msg.splitlines():
-                    # print(line)
-                    words = line.split()
-                    try:
-                        if words[1] == "BAD" or words[1] == "NOT":
-                            success = False
-                            raise Exception("Hi")
-                        elif words[1] == "OK" and (words[2] == "[READ-WRITE]" or words[2] == "[READ-ONLY]"):
-                            # print(words)
-                            flag = True
-                            break
-                    except:
-                        pass
-                if flag:
-                    break
-            except Exception as e:
-                # print(e)
+            temp_msg = self.__main_socket.recv(1024).decode()
+            msg += temp_msg
+            flag = False
+            for line in temp_msg.splitlines():
+                # print(line)
+                words = line.split()
+                try:
+                    if words[1] == "BAD" or words[1] == "NOT":
+                        success = False
+                        raise Exception("Failed to select mailbox")
+                    elif words[1] == "OK" and (words[2] == "[READ-WRITE]" or words[2] == "[READ-ONLY]"):
+                        # print(words)
+                        flag = True
+                        break
+                except:
+                    pass
+            if flag:
                 break
         
         
@@ -252,11 +248,11 @@ class IMAP:
                 decoded_email['index'] = start - count + index;
                 emails.insert(0, decoded_email)
 
-            return True, emails
+            return emails
 
         # If the request fails then return error
         else:
-            return False, "Failed to fetch email! Please try again!!"
+            raise Exception("Failed to fetch email! Please try again!!")
 
 
 
@@ -291,23 +287,32 @@ class IMAP:
     # index: Index of mail to fetch
     def fetch_whole_body(self, index):
         # Fetch the boundary id
+        filenames = self.get_body_structure(index)
+        
         boundary_id = self.get_boundary_id(index)
-        body = ""
+        
 
         # Fetch the body
         command_body = "a02 FETCH " + str(index) + \
                 " (BODY[text])" + self.__MAIL_NEW_LINE
         self.__main_socket.send(command_body.encode())
         success, msg = self.__get_whole_message()
-       
+        is_attachment_present = False
+
+        if len(filenames) != 0:
+            is_attachment_present = True
+
+        body = ""
+
         if success:
             
             # If there is no boundary id then there is simple single part text body
             if boundary_id != None:
                 # boundary_id = ""
                 body_list = self.__get_email_body_list(boundary_id, msg)
-                
+
                 for item in body_list:
+                    
                     header, main = self.__separate_body(item)
                     
                     headers = self.__get_body_headers(header)
@@ -329,20 +334,114 @@ class IMAP:
 
                     elif headers[0].lower() in ['text/plain', 'text/html']:
                         main = self.__get_cleaned_up_body(headers, main)
-                    else:
-                        main = ""
 
                     body += main + "\n"
 
-                return body
+                return {
+                    'body': body, 
+                    'is_attachment': is_attachment_present,
+                    'filename': filenames
+                }
 
             else:
                 msg = self.__extract_text_from_html(msg)
                 msg = '\n'.join(line for line in msg.splitlines()[1:-1])
-                return msg.strip('\r\t\n')
+                return {
+                    'body': msg.strip('\r\t\n'), 
+                    'is_attachment': False,
+                    'filename': []
+                }
+                
         # Return the error if request fails
         else:
             raise Exception("Something went wrong! Body not fetched properly")
+
+
+    def get_body_structure(self, index):
+         # Fetch the body
+        command_body = "a02 FETCH " + str(index) + \
+                " (BODYSTRUCTURE)" + self.__MAIL_NEW_LINE
+        try:
+            self.__main_socket.send(command_body.encode())
+            success, msg = self.__get_whole_message()
+
+            if not success:
+                raise Exception("Something went wrong")
+            filenames = []
+            key = '"FILENAME"'
+            res = [i for i in range(len(msg)) if msg.startswith(key, i)]
+            for i in res:
+                temp = msg[i:]
+                temp = temp[:temp.find(')')]
+                filename = temp.split()[1]
+                filename = filename.replace('"', '')
+                filenames.append(filename)
+
+            # boundary_key = '"MIXED"'
+            # index = msg.find(boundary_key)
+            # main_boundary_id = None
+            # if index != -1:
+            #     temp = msg[index:]
+            #     temp = temp[:temp.find(')')]
+            #     main_boundary_id = temp.split()[-1].replace('"','')
+
+            # boundary_key = '"ALTERNATIVE"'
+            # index = msg.find(boundary_key)
+            # alternative_boundary_id = None
+            # if index != -1:
+            #     temp = msg[index:]
+            #     temp = temp[:temp.find(')')]
+            #     alternative_boundary_id = temp.split()[-1].replace('"','')
+                
+            return filenames
+        except Exception as e:
+            print(e)
+            return []
+
+
+    '''To download the attachment if it is present'''
+    def download_attachment(self, index):
+        #
+        try:
+            boundary_id = self.get_boundary_id(index)
+            # Fetch the body
+            command_body = "a02 FETCH " + str(index) + \
+                    " (BODY[text])" + self.__MAIL_NEW_LINE
+            self.__main_socket.send(command_body.encode())
+            success, msg = self.__get_whole_message(is_attachment=True)
+            
+            if boundary_id == None or not success:
+                raise Exception("hi")
+            
+            body_list = self.__get_email_body_list(boundary_id, msg)
+            username = getpass.getuser()
+            dir_path = "/home/" + username + "/Downloads/"
+            msg = "File downloaded in downloads folder"
+            if not os.path.isdir(dir_path):
+                dir_path = "/home/" + username + "/"
+                msg = "File downloaded in home folder"
+                
+            for item in body_list:
+                header, main = self.__separate_body(item)
+                headers = self.__get_body_headers(header)
+                if headers[0].lower().startswith("video/") or headers[0].lower().startswith("image/") or headers[0].lower().startswith("application/"):
+                    success, filename = self.__get_attachment_file_name(header)
+                    
+                    filename = filename.replace('"', '')
+                    if not success:
+                        raise Exception("Hi")
+                    
+                    file_path = dir_path + filename
+                    attach = open(file_path, 'wb')
+                    content = base64.b64decode(main)
+                    attach.write(content)
+            return msg
+
+            
+            
+        except Exception as e:
+            print(e)
+            raise Exception("Failed to download file! Please try again!!")
        
 
 
@@ -400,7 +499,9 @@ class IMAP:
 
     
     '''To get whole reply back from the server'''
-    def __get_whole_message(self):
+    # Arguments:
+    # is_attachment: If true then fetch whole email otherwise fetch only text from body
+    def __get_whole_message(self, is_attachment=False):
         msg = ""
         email_results = ["OK", "NO", "BAD"]
         while 1:
@@ -412,6 +513,19 @@ class IMAP:
                
                 # Split the lines from the received message
                 lines_arr = temp_msg.splitlines()
+
+                # Check if file contains video attachments if yes return from function
+                if not is_attachment:
+                    for index, line in enumerate(lines_arr):
+                        key = "content-type:"
+                        if line.lower().startswith(key):
+                            content_type = line[len(key):line.find(';')]
+                            temp = content_type.strip().lower()
+                            if temp.startswith("video/") or temp.startswith("image/") or temp.startswith("application/"):
+                                main_msg = msg
+                                main_msg += "\n".join(line for line in temp_msg.splitlines()[:index])
+                                return True, main_msg
+                
                 
                 # Check if the last line contains the codes involved in imap protocol
                 code1 = None
@@ -605,14 +719,11 @@ class IMAP:
 
         # Add -- add the start of boundary_id (Present in imap_header)
         boundary_id = "--" + boundary_id
-        
-        boundary_indices = []
-        
-        # Find all the occurunces of boundary_id and add its index to array
-        boundary_indices = [i.start() for i in re.finditer(boundary_id, msg)]
+
+        res = [i for i in range(len(msg)) if msg.startswith(boundary_id, i)]
         
         # Return the array
-        return boundary_indices
+        return res
 
 
 
@@ -624,6 +735,8 @@ class IMAP:
 
         # Find all the occurunce of boundary_id
         boundary_indices = self.__get_boundary_indices(boundary_id, msg)
+        
+        
         body_list = []
     
         i = 0
@@ -691,6 +804,28 @@ class IMAP:
         return content_type, content_encoding, boundary
 
 
+    '''To get the attachment file name from header'''
+    # Arguements:
+    # header: header of attachement body
+    def __get_attachment_file_name(self, header):
+        key = "filename="
+        for line in header.splitlines():
+            # print(line)
+            index = line.find(key)
+            if index != -1:
+                start = index + len(key) + 1
+                name = line[start:]
+                # print(name)
+                end_index = name.find(";")
+                if end_index == -1:
+                    name = name[:-1]
+                else:
+                    name = name[:-2]
+                return True, name
+        return False, "File does not exits"
+
+
+
     
     '''To get text from body according to content-type and content-transfer-encoding'''
     # Arguements:
@@ -751,12 +886,14 @@ if __name__ == "__main__":
     imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
     # print(folders)
-    num = imap.select_mailbox(folders['folders'][0])
+    num = imap.select_mailbox(folders[5])
+    imap.download_attachment(num)
     # print(num)
     # emails = imap.fetch_email_headers(num, 20)
     # print(emails)
-    body = imap.fetch_whole_body(num - 6)
-    print(body)
+    # body = imap.fetch_whole_body(num - 2)
+    # print(body)
+    # print(body)
     # imap.delete_email(num)
     # print(imap.delete_email(1))
     # imap.delete_email(10)

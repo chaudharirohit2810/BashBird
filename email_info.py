@@ -1,43 +1,53 @@
-import curses, textwrap
+import curses, textwrap, getpass, os
 from IMAP.main import IMAP
 from loading import Loading
 from curses.textpad import rectangle
 from BottomBar import BottomBar
 from Title import Title
+import utils
 
 class EMAIL_INFO:
 
     #<!------------------------------------------------------Variables--------------------------------------------!>
     __subject = ""
     __from = ""
+    __index = -1
     __body = ""
     __date = ""
     __is_error = False
+    __is_attachment_present = False
+    __attachment_data = None
+    __attachment_filenames = []
 
     __imap = None
     __stdscr = None
 
-    options = [
-        {'key': 'D', 'msg': 'Delete Mail'},
-        {'key': 'Q', 'msg': 'Go Back'}
-    ]
+    options = []
 
     #<!---------------------------------------------------Functions-----------------------------------------------!>
-
+    '''Constructor of class'''
+    # Arguements:
+    # stdscr: Standard screen of curses
+    # email_details: Touple containing index, subject, from and date respectively
+    # imap: Imap object
     def __init__(self, stdscr, email_details, imap):
 
         # Initialize the variable
         self.__stdscr = stdscr
         self.__imap = imap
+        self.options = [
+            {'key': 'Q', 'msg': 'Go Back'}
+        ]
 
         # Destructure the email_details
-        index, self.__subject, self.__from, self.__date = email_details
-        self.__fetch_body(index)
+        self.__index, self.__subject, self.__from, self.__date = email_details
+        self.__fetch_body(self.__index)
 
         if not self.__is_error:
             self.__main()
 
-    
+
+    #<!----------------------------------------------------Logic------------------------------------------------------>
     '''Main wrapper function'''
     def __main(self):
         key = 0
@@ -60,19 +70,29 @@ class EMAIL_INFO:
                 elif key == curses.KEY_UP and start > 0:
                     start -= 1
 
+            if self.__is_attachment_present and key == ord('d'):
+                self.__download_attachment()
+
+
             max_lines = max(self.__set_main_layout(self.__body.splitlines()[start:]), max_lines)
             BottomBar(self.__stdscr, self.options)
             self.__stdscr.refresh()
 
             
-
-
-    
+    '''To fetch body of emails using imap object'''
     def __fetch_body(self, index):
         try:
+            # start loading
             loading = Loading(self.__stdscr)
             loading.start()
-            self.__body = self.__imap.fetch_whole_body(index)
+            response = self.__imap.fetch_whole_body(self.__index)
+            self.__body = response['body']
+            self.__is_attachment_present = response['is_attachment']
+            self.__attachment_filenames = response['filename']
+
+            # If attachment is_present add it in options array
+            if response['is_attachment']:
+                self.options.insert(0, {'key': 'D', 'msg': 'Download Attachment'})
             loading.stop()
         except Exception as e:
             print(e)
@@ -81,13 +101,30 @@ class EMAIL_INFO:
             self.__is_error = True
             self.__show_message("Something went wrong! Press 'q' to go back")
 
+
+    '''To download attachments in mail'''
+    def __download_attachment(self):
+        try:
+            utils.show_status_message(stdscr=self.__stdscr, msg="Downloading File.....", isLoading=True)
+            msg = self.__imap.download_attachment(self.__index)
+            utils.show_status_message(self.__stdscr, msg, time_to_show=3.5)
+        except:
+            utils.show_status_message(self.__stdscr, "Downloading failed! Please try again!!", time_to_show=2)
+
+
+
+
+
     
+    #<!--------------------------------------------------- UI ------------------------------------------------------>
+
 
     '''Function which sets up the whole layout of main page'''
     def __set_main_layout(self, body):
         from_start = 3
         from_block_total = 4
         subject_lines = 4
+        attachment_block = 0
             
             
         h, w = self.__stdscr.getmaxyx()
@@ -108,7 +145,6 @@ class EMAIL_INFO:
         if len(self.__subject.strip()) == 0:
             self.__subject = "(no subject)"
 
-
         # used to divide subject in multiple lines
         wrapper = textwrap.TextWrapper(width=w - 3)
         elipsize = "....."
@@ -121,15 +157,35 @@ class EMAIL_INFO:
                 self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
                 break
             self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
+
+        # If attachment is present show the block for attachment
+        if self.__is_attachment_present == True:
+            attachment_block = 2
+            attachment_start = from_start + from_block_total + subject_lines
+
+            # Convert attachment array to string
+            filename_string = "  ".join(name for name in self.__attachment_filenames)
+            # Wrap the attachment
+            attach_arr = wrapper.wrap(filename_string)
+
+            # Show the attachments
+            for item in attach_arr:
+                self.__stdscr.addstr(attachment_start + attachment_block, 2, item)
+                attachment_block += 1
+            
+            rectangle(self.__stdscr, attachment_start + 1, 0, attachment_start + attachment_block, w - 2)
+            self.__stdscr.addstr(attachment_start + 1, 2, " Attachments: ")
             
 
         # Body part of UI
-        rectangle(self.__stdscr, from_block_total + from_start + subject_lines + 1, 0, h - 5, w - 1)
-        self.__stdscr.addstr(from_block_total + from_start + subject_lines + 1, 2, " BODY ")
+        body_start = from_start + from_block_total + subject_lines + attachment_block
+        rectangle(self.__stdscr, body_start + 1, 0, h - 5, w - 1)
+        self.__stdscr.addstr(body_start + 1, 2, " BODY ")
 
         # Divide body into parts
-        body_start = 13
-        max_lines = (h - 5) - (from_block_total + from_start + subject_lines + 1) - 2
+        
+        max_lines = (h - 5) - (body_start + 1) - 2
+        body_start += 2
         body_end = body_start + max_lines
         for item in body:
             body_arr = wrapper.wrap(item)
@@ -141,9 +197,8 @@ class EMAIL_INFO:
                     break
                 self.__stdscr.addstr(body_start, 1, body)
                 body_start += 1
-
+        # return max number of lines
         return max_lines
-
 
 
     '''To show message when mailbox is empty or some error occured'''
@@ -164,3 +219,6 @@ class EMAIL_INFO:
 
             # Get user input from user
             key = self.__stdscr.getch()
+
+    
+    

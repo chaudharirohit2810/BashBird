@@ -8,6 +8,8 @@ from Title import Title
 from email_info import EMAIL_INFO
 from threading import Thread
 from curses.textpad import rectangle
+from threading import Thread
+import utils
 
 
 class EMAIL_LIST:
@@ -21,9 +23,11 @@ class EMAIL_LIST:
     __curr_position = 0
     __arr_position = 0
     num = 0
-    emails = None
+    count = 0
+    emails = []
     exception = ""
     __status_msg = ""
+
 
     options = [
         {'key': 'D', 'msg': 'Delete Mail'},
@@ -39,6 +43,7 @@ class EMAIL_LIST:
     __curr_confirm_index = 0
     # TODO: Later changes this array to title and function dictionary
     __confirm_menu =["YES", "NO"]
+    
 
 
     #<!------------------------------------------------Functions-----------------------------------------------------!>
@@ -93,16 +98,15 @@ class EMAIL_LIST:
                 self.__show_message(msg)
                 return
             
-            # Fetch atleast 30 mails if total mails are less than that then fetch total number of mails
+            # Fetch atleast 15 mails if total mails are less than that then fetch total number of mails
             count = min(num - 1, 30)
 
             emails = self.__imap.fetch_email_headers(num, count)
 
-            # Check if the request was success
             # TODO: If the request failed then show the error message
-            if emails[0]:
-                self.__main_list = emails[1]
-                self.emails = emails
+            self.__main_list = emails
+            self.emails = emails
+
 
             # Stop the loading
             loading.stop()
@@ -171,9 +175,6 @@ class EMAIL_LIST:
             # Show the email list
             self.__display_list = self.__main_list[arr_start:arr_end]
             max_len = max(self.__set_email_list(), max_len)
-
-
-
 
 
     #<!-------------------------------------------------EMAIL LIST UI --------------------------------------------->        
@@ -312,7 +313,7 @@ class EMAIL_LIST:
             # TODO: Do the functionality according to choice of user
             elif key == curses.KEY_ENTER or key in [10, 13]:
                 if self.__curr_confirm_index == 0:
-                    self.__show_status_message("Deleting email....", isLoading=True)
+                    utils.show_status_message(self.__stdscr, "Deleting email....", isLoading=True)
                     try:
                         isDeleted, num = self.__imap.delete_email(self.num - self.__arr_position)
                         if not isDeleted:
@@ -326,9 +327,9 @@ class EMAIL_LIST:
                         self.__display_list.pop(self.__curr_position)
                         
                         # Show mail sent successfully message
-                        self.__show_status_message("Mail deleted Successfully", time_to_show=1)
+                        utils.show_status_message(self.__stdscr, "Mail deleted Successfully", time_to_show=1)
                     except Exception as e:
-                        self.__show_status_message(str(e), 2)
+                        utils.show_status_message(self.__stdscr, str(e), 2)
                 
                 self.__set_email_list()
                 break
@@ -383,33 +384,6 @@ class EMAIL_LIST:
     '''To setup bottom bar'''
     def __setup_bottom_bar(self):
         BottomBar(self.__stdscr, self.options)
-
-
-    '''To show status message while authenticating'''
-    # Arguements:
-    # msg: Message to show
-    # time_to_show: Time for which message needs to be shown
-    # isLoading: If the text is related to loading
-     # TODO: Implement loading also
-    def __show_status_message(self, msg, time_to_show = -1, isLoading=False):
-        h, w = self.__stdscr.getmaxyx()
-
-        # Blink the text if it is in loading state
-        if isLoading:
-            self.__stdscr.attron(curses.A_BLINK)
-
-        self.__stdscr.attron(curses.A_STANDOUT)
-        self.__stdscr.attron(curses.A_BOLD)
-        self.__stdscr.addstr(h - 5, w // 2 - len(msg) // 2, " " + str(msg) +  " ")
-        self.__stdscr.refresh()
-        if time_to_show != -1:
-            time.sleep(time_to_show)
-
-        # Disable attributes
-        self.__stdscr.attroff(curses.A_STANDOUT)
-        self.__stdscr.attroff(curses.A_BOLD)
-        if isLoading:
-            self.__stdscr.attroff(curses.A_BLINK)
 
 
 
