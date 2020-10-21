@@ -65,7 +65,7 @@ class EMAIL_INFO:
                 flag = True
 
             if not flag:
-                if key == curses.KEY_DOWN and start <= len(self.__body.splitlines()) - max_lines - 3:
+                if key == curses.KEY_DOWN and start <= len(self.__body.splitlines()) - max_lines - 1:
                     start += 1
                 elif key == curses.KEY_UP and start > 0:
                     start -= 1

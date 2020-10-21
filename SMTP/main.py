@@ -3,6 +3,9 @@ import ssl
 from dotenv import load_dotenv
 import os
 from email.base64mime import body_encode as encode_64
+import email.mime.multipart
+import email.mime.text, email.mime.image, email.mime.application
+import mimetypes
 
 
 '''Class which does all the part of SMTP Protocol'''
@@ -80,19 +83,49 @@ class SEND_MAIL:
     '''Function which is used to send mail'''
     # Arguements:
     # mail_to : The email address of receiver
-    # subject: The subject of mail
     # data: Body of mail
-    def send_email(self, mail_to, subject, data):
+    def send_email(self, mail_to, data):
         # print('Sending mail..................')
         self.__send_main_from()
-        self.__send__RCPT_TO(mail_to)   
-        self.__send__DATA(subject, data)
+        for item in mail_to:
+            self.__send__RCPT_TO(item.strip())   
+        self.__send__DATA(data)
+
+
+    def add_attachment(self, subject, text, filepaths):
+        try:
+            msg = email.mime.multipart.MIMEMultipart()
+            msg['Subject'] = subject
+            body = email.mime.text.MIMEText(text)
+            msg.attach(body)
+            for filepath in filepaths:
+                filepath = filepath.strip()
+                if filepath != None and len(filepath) != 0:
+                    file_type = mimetypes.MimeTypes().guess_type(filepath)[0]
+                    # Check if mimetype starts from application
+                    if file_type.startswith('application/'):
+                        pdf_file = open(filepath, 'rb')
+                        attach = email.mime.application.MIMEApplication(pdf_file.read(), _subtype=file_type.split('/')[1])
+                        pdf_file.close()
+                    # Check if attachment is image
+                    elif file_type.startswith('image/'):
+                        image_file = open(filepath, 'rb')
+                        attach = email.mime.image.MIMEImage(image_file.read(), _subtype=file_type.split('/')[1])
+                        image_file.close()
+                    attach.add_header("Content-Disposition", "attachment", filename=os.path.basename(filepath))
+                    msg.attach(attach)
+            return msg.as_string()
+        except:
+            raise Exception("Invalid filename")
 
 
     # TODO: Call this function in destructor
     '''Send QUIT to server when conversation is complete'''
     def quit(self):
         self.__send_encoded_msg(self.__QUIT)
+
+    
+    
 
 
 
@@ -194,21 +227,15 @@ class SEND_MAIL:
 
 
     '''Send subject and body of mail to server'''
-    # subject: Subject of mail
     # data: body of mail
-    def __send__DATA(self, subject, data):
+    def __send__DATA(self, data):
         # Send "DATA" to smtp server
         code, reply = self.__send_encoded_msg(self.__DATA)
         # If code is not 354 then something is wrong with smtp server
         if code != 354:
             raise Exception('Something went wrong')
-        
-        # Send subject of mail
-        new_subject = "Subject: " + subject + self.__MAIL_NEW_LINE
-        self.main_socket.send(new_subject.encode('ascii'))
 
-        # Send body of mail
-        self.main_socket.send(data.encode('ascii'))
+        self.main_socket.send(data.encode()) 
 
         # Send end message to tell smtp server that mail has ended
         code, reply = self.__send_encoded_msg(self.__END_MSG)
@@ -218,6 +245,8 @@ class SEND_MAIL:
             raise Exception('Mail not sent successfully! Please try again')
         
         # print('Mail sent successfully')
+
+   
 
 
 
@@ -247,10 +276,15 @@ if __name__ == "__main__":
     load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    ins = SEND_MAIL(old_mail, old_pass, debug = True)
-    email = input('Enter the sender mail: ')
-    subject = input('Enter the subject: ')
-    body = input('Enter the body: ')
+    # ins = SEND_MAIL(old_mail, old_pass, debug = True)
+    # email_send = "rohitkc2810@gmail.com"
+    # subject = input('Enter the subject: ')
+    # subject = "This is to check attachment part"
+    # body = "He kaskai chalat mag"
+    # body = ins.add_attachment("Subject of email", "Body of attachment email", "/home/rohit/Downloads/SIH-certificate.pdf")
     
-    ins.send_email(email, subject = subject, data = body)
+    # ins.send_email(email_send.split(';'), data = body)
+    filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png", "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
+    for filepath in filepaths:
+        print(mimetypes.MimeTypes().guess_type(filepath)[0])
 

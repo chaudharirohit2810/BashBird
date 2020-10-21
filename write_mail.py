@@ -6,6 +6,10 @@ from SMTP.main import SEND_MAIL
 from threading import Thread
 from Title import Title
 import utils
+from email.base64mime import body_encode as encode_64
+import email.mime.multipart
+import email.mime.text
+import email.mime.application
 
 '''Class which handles all the UI part of write mail'''
 class Write_Mail_UI:
@@ -19,6 +23,7 @@ class Write_Mail_UI:
     __subject = ""
     __body = ""
     __pass = ""
+    __attachments = ""
     # This flag becomes true when mail is sent
     __is_mail_sent = False
 
@@ -30,8 +35,9 @@ class Write_Mail_UI:
 
 
     # Default Input messages
-    __default_subject_input_msg = "Enter Subject of Mail(Press Ctrl + G to save)"
-    __default_body_input_msg = "Enter body of Mail(Press Ctrl + G to save)"
+    __default_subject_input_msg = "Enter Subject of Mail (Press Ctrl + G to save)"
+    __default_body_input_msg = "Enter body of Mail (Press Ctrl + G to save)"
+    __default_attachment_msg = "Enter attachments absolute path"
 
 
     # Key variables (what happens when which key is pressed)
@@ -41,6 +47,7 @@ class Write_Mail_UI:
     __QUIT = ord('q')
     __CONFIRM_MAIL = ord('m')
     __EDIT_MAIL_TO_KEY = ord('t')
+    __EDIT_ATTACHMENT = ord('a')
 
     
 
@@ -71,13 +78,25 @@ class Write_Mail_UI:
     #<--------------------------------------------------Private Functions-------------------------------------------->
     
     '''Main function which draws all the elements on screen'''
+    
     def __draw(self):
+        start = 0
+        max_lines = self.__set_main_layout(self.__body.splitlines()[start:])
         while (self.__key != self.__QUIT) and not self.__is_mail_sent:
             self.__stdscr.clear()
             
+
+            h, w = self.__stdscr.getmaxyx()
+            
             self.__set_default_screen(self.__title, isMain= True)
 
-            self.__set_main_layout()
+            max_lines = max(self.__set_main_layout(self.__body.splitlines()[start:]), max_lines)
+
+            flag = False
+
+            if len(self.__body.splitlines()) < max_lines:
+                flag = True
+
             
             self.__key = self.__stdscr.getch()
 
@@ -86,11 +105,23 @@ class Write_Mail_UI:
             if self.__key == self.__EDIT_SUBJECT:
                 self.__subject = self.__edit_box(self.__default_subject_input_msg, self.__default_subject_input_msg, self.__subject)
             elif self.__key == self.__EDIT_BODY:
-                self.__body = self.__edit_box(self.__default_body_input_msg, self.__default_body_input_msg, self.__body, size=2)
+                self.__body = self.__edit_box(self.__default_body_input_msg, self.__default_body_input_msg, self.__body, size = h - 4)
+            elif self.__key == self.__EDIT_ATTACHMENT:
+                self.__attachments = self.__edit_box(self.__default_attachment_msg,self.__default_attachment_msg, self.__attachments, is_attachment=True)
             elif self.__key == self.__EDIT_MAIL_TO_KEY:
                 self.__email_to = self.__edit_mail_to(self.__email_to).strip()
             elif self.__key == self.__CONFIRM_MAIL:
                 self.__set_default_screen(self.__title, isConfirm = True)
+            
+            # To move body according to up and down lines
+            if not flag:
+                if self.__key == curses.KEY_DOWN and start <= len(self.__body.splitlines()) - max_lines - 1:
+                    start += 1
+                elif self.__key == curses.KEY_UP and start > 0:
+                    start -= 1
+            
+
+         
 
             
 
@@ -101,18 +132,19 @@ class Write_Mail_UI:
 
     
     '''Function which sets up the whole layout of main page'''
-    def __set_main_layout(self):
+    def __set_main_layout(self, body):
         from_start = 3
         from_block_total = 4
         subject_lines = 4
-            
+        attachment_block = 0
             
         h, w = self.__stdscr.getmaxyx()
         # From, To part of UI
-        self.__stdscr.addstr(from_start, 1, "From: " + self.__email_from)
-        rectangle(self.__stdscr, from_start - 1, 0, from_start + 1, w - 1)
-        self.__stdscr.addstr(from_start + 2, 1, "To: " + self.__email_to)
-        rectangle(self.__stdscr, from_start - 1, 0, from_start + 3, w - 1)
+        # self.__stdscr.addstr(from_start, 1, "From: " + self.__email_from)
+        # rectangle(self.__stdscr, from_start - 1, 0, from_start + 1, w - 1)
+        rectangle(self.__stdscr, from_start - 1, 0, from_start + 2, w - 1)
+        self.__stdscr.addstr(from_start - 1, 2, " To: ")
+        self.__stdscr.addstr(from_start, 2, self.__email_to)
 
         # Subject part of UI
         rectangle(self.__stdscr, from_start + from_block_total, 0, from_start + from_block_total + subject_lines, w - 1)
@@ -130,22 +162,48 @@ class Write_Mail_UI:
                 self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
                 break
             self.__stdscr.addstr(from_start + from_block_total + 1 + index, 1, subject)
+
+        
+        # If attachment is present show the block for attachment
+        if len(self.__attachments.strip()) != 0:
+            attachment_block = 2
+            attachment_start = from_start + from_block_total + subject_lines
+
+            # Convert attachment array to string
+            filename_string = "  ".join(str(index + 1) + "." + name for index, name in enumerate(self.__attachments.split(';')))
+            # Wrap the attachment
+            attach_arr = wrapper.wrap(filename_string)
+
+            # Show the attachments
+            for item in attach_arr:
+                self.__stdscr.addstr(attachment_start + attachment_block, 2, item)
+                attachment_block += 1
+            
+            rectangle(self.__stdscr, attachment_start + 1, 0, attachment_start + attachment_block, w - 2)
+            self.__stdscr.addstr(attachment_start + 1, 2, " Attachments: ")
             
 
         # Body part of UI
-        rectangle(self.__stdscr, from_block_total + from_start + subject_lines + 1, 0, h - 5, w - 1)
-        self.__stdscr.addstr(from_block_total + from_start + subject_lines + 1, 2, " BODY ")
+        body_start = from_start + from_block_total + subject_lines + attachment_block
+        rectangle(self.__stdscr, body_start + 1, 0, h - 5, w - 1)
+        self.__stdscr.addstr(body_start + 1, 2, " BODY ")
 
         # Divide body into parts
-        body_arr = wrapper.wrap(self.__body)
-        max_lines = (h - 5) - (from_block_total + from_start + subject_lines + 1)
-        for index, body in enumerate(body_arr):
-            # ellipsize the text if it can't be fit into the box
-            if index == max_lines:
-                body = body[0:w-10] + elipsize
-                self.__stdscr.addstr(13 + index, 1, body)
+        max_lines = (h - 5) - (body_start + 1) - 2
+        body_start += 2
+        body_end = body_start + max_lines
+        for item in body:
+            body_arr = wrapper.wrap(item)
+            if body_start > body_end:
                 break
-            self.__stdscr.addstr(13 + index, 1, body)
+            for body in body_arr:
+                # ellipsize the text if it can't be fit into the box
+                if body_start > body_end:
+                    break
+                self.__stdscr.addstr(body_start, 1, body)
+                body_start += 1
+        return max_lines
+        
 
 
 
@@ -153,21 +211,26 @@ class Write_Mail_UI:
     # Arguements:
     # input_msg = Message to show on edit text box
     # placeholder = Default value of edit textbox
-    # size = Size of edit box (0 = Small, 1 = Medium, 2 = Large, 3 = Extra large)
-    def __edit_box(self, title, input_msg, placeholder = "", size = 0):
+    # size = Size of edit box (default to 5)
+    # is_attachment = Is the edit text box if for attachments (Used to hint message)
+    def __edit_box(self, title, input_msg, placeholder = "", size = 5, is_attachment = False):
         curses.curs_set(1)
         self.__set_default_screen(title)
         # self.__stdscr.addstr(0, 0, input_msg)
         _, w = self.__stdscr.getmaxyx()
 
-        # create a new window
+        
         
 
-        number_of_lines = (size + 1) * 5
+       
+        number_of_lines = size
         number_of_columns = w - 3
 
+        # create a new window
         editwin = curses.newwin(number_of_lines, number_of_columns, 2, 1)
         rectangle(self.__stdscr, 1, 0, 2 + number_of_lines, 2 + number_of_columns)
+        if is_attachment:
+            self.__stdscr.addstr(number_of_lines + 3, 1, "* Use ; to separate multiple filepaths")
         self.__stdscr.refresh()
 
         editwin.insstr(placeholder)
@@ -190,18 +253,18 @@ class Write_Mail_UI:
     def __edit_mail_to(self, to):
         curses.curs_set(1)
         h, w = self.__stdscr.getmaxyx()
-        to_msg = "To (Ctrl + G to save): "
-        editwin = curses.newwin(1, w - 5, 5, len(to_msg) + 1)
+        to_msg = " To (Ctrl + G to save): (Use ';' to separate multiple emails)"
+        editwin = curses.newwin(1, w - 5, 3, 2)
         editwin.insstr(to)
         self.__stdscr.attron(curses.A_BOLD)
-        self.__stdscr.addstr(5, 1, to_msg)
+        self.__stdscr.addstr(2, 2, to_msg)
         self.__stdscr.attroff(curses.A_BOLD)
         self.__stdscr.refresh()
         box = Textbox(editwin)
         box.stripspaces = True
         box.edit()
 
-        self.__set_main_layout()
+        self.__set_main_layout(self.__body.splitlines())
         curses.curs_set(0)
         return box.gather()
 
@@ -224,7 +287,7 @@ class Write_Mail_UI:
         
         # Need to call set main layout again as second function goes in infinite while loop
         if isConfirm:
-            self.__set_main_layout()
+            self.__set_main_layout(self.__body.splitlines())
             self.__set_confirm_email_bar()
 
         self.__stdscr.refresh()
@@ -243,7 +306,7 @@ class Write_Mail_UI:
             {'key': 'M', 'msg': 'Send Mail'},
             {'key': 'Q', 'msg': 'Go Back'},
             {'key': 'T', 'msg': 'Edit Mail To'},
-            {'key': 'A', 'msg': 'Add acknowledgement'}
+            {'key': 'A', 'msg': 'Add Attachment'}
         ]
         # show the bottom bar
         BottomBar(self.__stdscr, options)
@@ -303,8 +366,9 @@ class Write_Mail_UI:
                         self.__check_validation()
                         # Authenticate
                         smtp = SEND_MAIL(self.__email_from, self.__pass)
-                        # Send mail
-                        smtp.send_email(self.__email_to, self.__subject, self.__body)
+                        receiver_emails = self.__email_to.split(';')
+                        data = smtp.add_attachment(self.__subject, self.__body, self.__attachments.split(';'))
+                        smtp.send_email(receiver_emails, data=data)
 
                         # Show mail sent successfully message
                         utils.show_status_message(self.__stdscr, "Mail sent Successfully", time_to_show=1.5)
@@ -325,6 +389,21 @@ class Write_Mail_UI:
 
 
     #<--------------------------------------------Utility functions---------------------------------------->
+
+    '''To add attachments in body message'''
+    def __setup_body(self):
+        msg = email.mime.multipart.MIMEMultipart()
+        body = email.mime.text.MIMEText(self.__body.strip())
+        msg.attach(body)
+        paths = self.__attachments.split(';')
+        for filepath in paths:
+            pdf_file = open(filepath.strip(), 'rb')
+            attach = email.mime.application.MIMEApplication(pdf_file.read(), _subtype="pdf")
+            pdf_file.close()
+            attach.add_header("Content-Disposition", "attachment", filename="test.pdf")
+            msg.attach(attach)
+        return msg.as_string()
+
 
     '''To check if all the data filled is valid'''
     def __check_validation(self):
