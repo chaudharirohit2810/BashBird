@@ -24,12 +24,13 @@ class Loading:
     __is_loading = False
     __count = 10
 
+
+
     #<!----------------------------------------------Functions--------------------------------------------------->
     def __init__(self, stdscr):
         self.__stdscr = stdscr
 
 
-    
     def __load(self):
         '''To show the loading text on terminal'''
 
@@ -52,7 +53,6 @@ class Loading:
             time.sleep(0.1)
             self.__stdscr.refresh()
         
-
     
     def start(self):
         '''To start loading'''
@@ -62,7 +62,6 @@ class Loading:
         self.__thread = Thread(target=self.__load)
         # Start the thread
         self.__thread.start()
-
 
     
     def stop(self):
