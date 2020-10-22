@@ -3,10 +3,20 @@ from IMAP.main import IMAP
 from loading import Loading
 from curses.textpad import rectangle
 from BottomBar import BottomBar
-from Title import Title
 import utils
 
 class EMAIL_INFO:
+    '''Shows the details of particular email with subject, from, date, body and attachments
+
+    Arguements \t
+    stdscr: Standard screen of curses \t
+    email_details: touple containing index, subject, from and date respectively \t
+    imap: Imap class object \t
+
+    '''
+
+
+
 
     #<!------------------------------------------------------Variables--------------------------------------------!>
     __subject = ""
@@ -25,11 +35,7 @@ class EMAIL_INFO:
     options = []
 
     #<!---------------------------------------------------Functions-----------------------------------------------!>
-    '''Constructor of class'''
-    # Arguements:
-    # stdscr: Standard screen of curses
-    # email_details: Touple containing index, subject, from and date respectively
-    # imap: Imap object
+   
     def __init__(self, stdscr, email_details, imap):
 
         # Initialize the variable
@@ -48,8 +54,11 @@ class EMAIL_INFO:
 
 
     #<!----------------------------------------------------Logic------------------------------------------------------>
-    '''Main wrapper function'''
+    
+
     def __main(self):
+        '''Main wrapper function'''
+
         key = 0
         start = 0
         curses.curs_set(0)
@@ -79,13 +88,15 @@ class EMAIL_INFO:
             self.__stdscr.refresh()
 
             
-    '''To fetch body of emails using imap object'''
+    
     def __fetch_body(self, index):
+        '''To fetch body of emails using imap object'''
+
         try:
             # start loading
             loading = Loading(self.__stdscr)
             loading.start()
-            response = self.__imap.fetch_whole_body(self.__index)
+            response = self.__imap.fetch_text_body(self.__index)
             self.__body = response['body']
             self.__is_attachment_present = response['is_attachment']
             self.__attachment_filenames = response['filename']
@@ -102,14 +113,16 @@ class EMAIL_INFO:
             self.__show_message("Something went wrong! Press 'q' to go back")
 
 
-    '''To download attachments in mail'''
+  
     def __download_attachment(self):
+        '''To download attachments in mail'''
+
         try:
             utils.show_status_message(stdscr=self.__stdscr, msg="Downloading File.....", isLoading=True)
             msg = self.__imap.download_attachment(self.__index)
-            utils.show_status_message(self.__stdscr, msg, time_to_show=3.5)
-        except:
-            utils.show_status_message(self.__stdscr, "Downloading failed! Please try again!!", time_to_show=2)
+            utils.show_status_message(self.__stdscr, msg, time_to_show=3)
+        except Exception as e:
+            utils.show_status_message(self.__stdscr, str(e), time_to_show=2)
 
 
 
@@ -119,8 +132,10 @@ class EMAIL_INFO:
     #<!--------------------------------------------------- UI ------------------------------------------------------>
 
 
-    '''Function which sets up the whole layout of main page'''
+    
     def __set_main_layout(self, body):
+        '''Function which sets up the whole layout of main page'''
+
         from_start = 3
         from_block_total = 4
         subject_lines = 4
@@ -129,7 +144,7 @@ class EMAIL_INFO:
             
         h, w = self.__stdscr.getmaxyx()
         self.__stdscr.clear()
-        Title(self.__stdscr, "Email Information")
+        utils.set_title(self.__stdscr, "Email Information")
 
         # From, To part of UI
         self.__stdscr.addstr(from_start, 1, "From: " + self.__from)
@@ -201,8 +216,10 @@ class EMAIL_INFO:
         return max_lines
 
 
-    '''To show message when mailbox is empty or some error occured'''
+    
     def __show_message(self, msg):
+        '''To show message when mailbox is empty or some error occured'''
+
         h, w = self.__stdscr.getmaxyx()
         
         key = 0

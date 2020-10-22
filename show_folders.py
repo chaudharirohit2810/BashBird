@@ -4,10 +4,21 @@ from menu import Menu
 from dotenv import load_dotenv
 import os, curses, getpass
 from email_list import EMAIL_LIST
+import utils
 
 class Show_Folders:
+    '''Show mailboxes on imap server
+
+        Arguements \t
+        stdscr: Standard screen of imap server
+
+    '''
+
+    #<!------------------------------------------------Variables----------------------------------------------------->
     __stdscr = None
 
+
+    #<!----------------------------------------------Functions------------------------------------------------------>
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         loading = Loading(stdscr)
@@ -33,7 +44,6 @@ class Show_Folders:
 
         except:
             loading.stop()
+            utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
 
 
-# if __name__ == "__main__":
-#     curses.wrapper(main)    

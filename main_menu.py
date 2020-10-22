@@ -5,21 +5,25 @@ from show_folders import Show_Folders
 from curses.textpad import rectangle
 
 
-
-'''Main menu class which shows main menu'''
 class Main_Menu:
+    '''Class which shows main menu
+
+        Arguements \t
+        stdscr: Standard screen
+
+    '''
+
+    #<!---------------------------------------------------Variables------------------------------------------------>
     __menu_strings = [ "Exit"]
     __menu = []
     __stdscr = None
     #Confirm Email Variables
     __curr_confirm_index = 0
-    # TODO: Later changes this array to title and function dictionary
     __confirm_menu =["YES", "NO"]
 
 
-    '''Constructor of main menu'''
-    # Arguements
-    # stdscr    Standard screen
+    #<!-------------------------------------------------Functions--------------------------------------------------->
+
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         menu = [{'title': "Write mail", 'Function': Write_Mail_UI, 'args': None}]
@@ -32,10 +36,11 @@ class Main_Menu:
     
 
 
-    '''To display confirm email bottom bar'''
-    # TODO: Later get title and functionality in array (for now only title is present)
+    
     def __display_bottom_bar_menu(self):
-        h, w = self.__stdscr.getmaxyx()
+        '''To display UI of confirm email bottom bar for logout'''
+
+        h, _ = self.__stdscr.getmaxyx()
         
         start_h = h - 3
         for index, item in enumerate(self.__confirm_menu):
@@ -54,10 +59,11 @@ class Main_Menu:
         self.__stdscr.refresh()
 
     
-    '''Setup confirm email bar'''
+    
     def __set_confirm_email_bar(self):
+        '''Setup confirm email bar for logout'''
+
         h, w = self.__stdscr.getmaxyx()
-        
         title = " Do you want to logout ".upper()
         rectangle(self.__stdscr, h - 4, 0, h - 1, w - 2)
         self.__stdscr.attron(curses.A_BOLD)
@@ -65,7 +71,6 @@ class Main_Menu:
         self.__stdscr.attroff(curses.A_BOLD)
         self.__display_bottom_bar_menu()
 
-        
         while 1:
             key = self.__stdscr.getch()
 
@@ -89,11 +94,7 @@ class Main_Menu:
 
             self.__display_bottom_bar_menu()
 
-
-
-
-    
-    
-    '''To show the menu'''
     def show(self):
+        '''To show the menu'''
+
         Menu(self.__stdscr, self.__menu, "Main menu", isMain=True)

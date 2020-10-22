@@ -4,15 +4,20 @@ from BottomBar import BottomBar
 from dotenv import load_dotenv
 from SMTP.main import SEND_MAIL
 from threading import Thread
-from Title import Title
 import utils
 from email.base64mime import body_encode as encode_64
 import email.mime.multipart
 import email.mime.text
 import email.mime.application
 
-'''Class which handles all the UI part of write mail'''
+
 class Write_Mail_UI:
+    '''Class which handles all the UI part of write mail
+
+        Arguements \t
+        Stdscr: Standard screen of curses
+    '''
+
     
     #<---------------------------------------------Variables--------------------------------------------->
     __stdscr = None
@@ -51,13 +56,8 @@ class Write_Mail_UI:
 
     
 
-
-
-
     #<----------------------------------------------Constructor--------------------------------------------->
-    # Arguements:
-    # Stdscr: Standard screen of curses
-    # TODO: Later will need to take email_from from file
+    
     def __init__(self, stdscr):
         # Get the environment filepath
         user = getpass.getuser()
@@ -77,9 +77,11 @@ class Write_Mail_UI:
 
     #<--------------------------------------------------Private Functions-------------------------------------------->
     
-    '''Main function which draws all the elements on screen'''
+    
     
     def __draw(self):
+        '''Main function which shows all the elements on screen'''
+
         start = 0
         max_lines = self.__set_main_layout(self.__body.splitlines()[start:])
         while (self.__key != self.__QUIT) and not self.__is_mail_sent:
@@ -97,11 +99,8 @@ class Write_Mail_UI:
             if len(self.__body.splitlines()) < max_lines:
                 flag = True
 
-            
             self.__key = self.__stdscr.getch()
 
-            # TODO: Setup every string according to width and height 
-            # TODO: Implement scroll view on small screen
             if self.__key == self.__EDIT_SUBJECT:
                 self.__subject = self.__edit_box(self.__default_subject_input_msg, self.__default_subject_input_msg, self.__subject)
             elif self.__key == self.__EDIT_BODY:
@@ -121,18 +120,14 @@ class Write_Mail_UI:
                     start -= 1
             
 
-         
-
-            
-
-
-
 
     #<-------------------------------------------------------------Main layout functions------------------------------------------------>
 
     
-    '''Function which sets up the whole layout of main page'''
+    
     def __set_main_layout(self, body):
+        '''Function which sets up the whole layout of main page'''
+
         from_start = 3
         from_block_total = 4
         subject_lines = 4
@@ -182,7 +177,6 @@ class Write_Mail_UI:
             rectangle(self.__stdscr, attachment_start + 1, 0, attachment_start + attachment_block, w - 2)
             self.__stdscr.addstr(attachment_start + 1, 2, " Attachments: ")
             
-
         # Body part of UI
         body_start = from_start + from_block_total + subject_lines + attachment_block
         rectangle(self.__stdscr, body_start + 1, 0, h - 5, w - 1)
@@ -205,24 +199,20 @@ class Write_Mail_UI:
         return max_lines
         
 
-
-
-    '''Function to show edit text box on screen'''
+    
     # Arguements:
     # input_msg = Message to show on edit text box
     # placeholder = Default value of edit textbox
     # size = Size of edit box (default to 5)
     # is_attachment = Is the edit text box if for attachments (Used to hint message)
     def __edit_box(self, title, input_msg, placeholder = "", size = 5, is_attachment = False):
+        '''Function to show edit text box on screen'''
+
         curses.curs_set(1)
         self.__set_default_screen(title)
         # self.__stdscr.addstr(0, 0, input_msg)
         _, w = self.__stdscr.getmaxyx()
 
-        
-        
-
-       
         number_of_lines = size
         number_of_columns = w - 3
 
@@ -240,17 +230,17 @@ class Write_Mail_UI:
         # box.stripspaces = True
         box.edit()
         
-
         self.__set_default_screen(self.__title, isMain = True)
-
         curses.curs_set(0)
         return box.gather()
 
     
-    '''To edit mail to field'''
+    
     # Arguements:
     # to: Mail to default value
     def __edit_mail_to(self, to):
+        '''Edit mail to field'''
+
         curses.curs_set(1)
         h, w = self.__stdscr.getmaxyx()
         to_msg = " To (Ctrl + G to save): (Use ';' to separate multiple emails)"
@@ -269,17 +259,16 @@ class Write_Mail_UI:
         return box.gather()
 
 
-
-
-    '''Setup Default Screen with title'''
+    
     # Arguements
     # title: Main title of screen
     # isMain: Is the bottom bar is for main screen
     # isConfirm: Is the bottom bar for confirm sending mail screen
     def __set_default_screen(self, title, isMain = False, isConfirm = False):
-        self.__stdscr.clear()
-            
-        Title(self.__stdscr, title)
+        '''Setup Default Screen with title'''
+
+        self.__stdscr.clear()    
+        utils.set_title(self.__stdscr, title)
 
         # Gives instructions to get different things done
         if isMain:
@@ -291,15 +280,11 @@ class Write_Mail_UI:
             self.__set_confirm_email_bar()
 
         self.__stdscr.refresh()
-        
-    
-    
     
 
-    
-
-    '''Setup bottom bar'''
     def __set_bottom_bar(self):
+        '''Setup bottom bar'''
+
         options = [
             {'key': 'S', 'msg': 'Edit Subject of Mail'},
             {'key': 'B', 'msg': 'Edit Body of Mail'},
@@ -311,11 +296,10 @@ class Write_Mail_UI:
         # show the bottom bar
         BottomBar(self.__stdscr, options)
 
-
-
-    '''To display confirm email bottom bar'''
-    # TODO: Later get title and functionality in array (for now only title is present)
+    
     def __display_bottom_bar_menu(self):
+        '''To display confirm email bottom bar'''
+
         h, _ = self.__stdscr.getmaxyx()
         
         start_h = h - 3
@@ -335,9 +319,9 @@ class Write_Mail_UI:
         self.__stdscr.refresh()
 
 
-
-    '''Setup confirm email bar'''
     def __set_confirm_email_bar(self):
+        '''Setup confirm email bar'''
+
         h, w = self.__stdscr.getmaxyx()
         rectangle(self.__stdscr, h - 4, 0, h - 1, w - 2)
         title = " Confirm sending email ".upper()
@@ -346,7 +330,6 @@ class Write_Mail_UI:
         self.__stdscr.attroff(curses.A_BOLD)
         self.__display_bottom_bar_menu()
 
-        
         while 1:
             key = self.__stdscr.getch()
 
@@ -390,8 +373,10 @@ class Write_Mail_UI:
 
     #<--------------------------------------------Utility functions---------------------------------------->
 
-    '''To add attachments in body message'''
+   
     def __setup_body(self):
+        '''To add attachments in body message'''
+
         msg = email.mime.multipart.MIMEMultipart()
         body = email.mime.text.MIMEText(self.__body.strip())
         msg.attach(body)
@@ -405,8 +390,8 @@ class Write_Mail_UI:
         return msg.as_string()
 
 
-    '''To check if all the data filled is valid'''
     def __check_validation(self):
+        '''To check if all the data filled is valid'''
         # To check if receiver email is empty
         if self.__email_to == "":
             raise Exception("Please Enter Receiver Email")
@@ -418,8 +403,8 @@ class Write_Mail_UI:
             raise Exception("Please Enter Body Of Email")
         
     
-    '''Function to setup color pairs required'''
     def __setup_color_pairs(self):
+        '''Function to setup color pairs required'''
         curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
             
         

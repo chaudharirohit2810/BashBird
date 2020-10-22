@@ -26,10 +26,17 @@ def temp(stdscr):
         key = stdscr.getch()
 
 
-'''Utility Menu class which displays menu on screen'''
-class Menu:
 
-    # <-------------------------------------Variables------------------------------------>
+class Menu:
+    '''Utility Menu class which displays menu on screen
+
+    Arguements \t
+    stdscr: Stdscr of curses \t
+    menu_options: Options available for menu \t
+    '''
+
+
+    # <-------------------------------------------------Variables------------------------------------------------->
     __curr_index = 0 # Current position in menu
     __stdscr = None # Stdscr variable of curses
     __menu = [] # Available menu options
@@ -39,12 +46,7 @@ class Menu:
     __title = ""
 
 
-    #<----------------------------------------Functions-------------------------------------->
-    '''Constructor'''
-    # Arguements:
-    # stdscr: Stdscr of curses
-    # menu_options: Options available for menu
-    # TODO: For now just list of strings is arguements later take list of strings mapped with functions
+    #<---------------------------------------------------Functions------------------------------------------------->
     def __init__(self, stdscr, menu_options, title, isMain = False):
         curses.curs_set(0)
         
@@ -88,8 +90,9 @@ class Menu:
 
     #<-------------------------------------------Private Functions------------------------------------->
 
-    '''Main function which displays menu'''    
+       
     def __display_menu(self):
+        '''Main function which displays menu''' 
 
         # Get height and width of screen (Required for centering menu)
         h, w = self.__stdscr.getmaxyx()
@@ -101,8 +104,6 @@ class Menu:
         self.__stdscr.clear()
         
         y_start = h // 2 - len(self.__menu) // 2
-
-        
 
         # Iterate over each option in menu
         for index, item in enumerate(self.__menu):
@@ -178,8 +179,9 @@ class Menu:
 
 
 
-    '''When enter is pressed on particular item'''
+   
     def __on_enter_pressed(self):
+        '''When enter is pressed for particular item'''
         
         if self.__menu[self.__curr_index]['args'] == "STDSCR_NR":
             self.__menu[self.__curr_index]['Function']()
@@ -199,11 +201,14 @@ class Menu:
 
     #<--------------------------------------------Utility functions---------------------------------------->
     
-    '''Function to setup color pairs required'''
+    
     def __setup_color_pairs(self):
+        '''Function to setup color pairs required'''
+
         curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
         
+
 
 
 menu_strings = ["Show email", "Logout", "Exit"]

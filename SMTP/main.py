@@ -8,13 +8,22 @@ import email.mime.text, email.mime.image, email.mime.application
 import mimetypes
 
 
-'''Class which does all the part of SMTP Protocol'''
+
 # Public Functions     Functionality
 #---------------------------------------------------------------------------------------------------------------
 # Constructor          Logins to smtp server using provided email and password
 # send_email           Sends mail to mail server
 
 class SEND_MAIL:
+    '''Class which does all the part of IMAP Protocol
+
+    Arguements: \t
+    email: User email \t
+    password: User password\t
+    smtp_server: Url of smtp server (default: gmail)\t
+    debugging: Utility variable to print sent and received messages
+    '''
+
 
 
     #<--------------------------------------------Variables----------------------------------------->
@@ -52,12 +61,7 @@ class SEND_MAIL:
 
     #<-------------------------------------------Functions----------------------------------------------->
 
-    '''Constructor of SMTP'''
-    # Arguements:
-    # Email: Email of user
-    # Password: Password of user
-    # smtp_server : Smtp hostname of server. Default: smtp.gmail.com
-    # Debug: Whethere to debug the output (Just for testing)
+   
     def __init__(self, email, password, smtp_server = "smtp.gmail.com", ssl_port=465, debug = False):
             self.__email = email 
             self.__password = password
@@ -79,12 +83,16 @@ class SEND_MAIL:
 
     # <--------------------------------------------Public functions---------------------------------------------->
 
-    # TODO: Also add attachments and CC
-    '''Function which is used to send mail'''
-    # Arguements:
-    # mail_to : The email address of receiver
-    # data: Body of mail
+        
     def send_email(self, mail_to, data):
+        '''Function which is used to send mail
+
+         Arguements \t
+         mail_to : The email address of receiver \t
+         data: Body of mail \t
+
+        '''
+
         # print('Sending mail..................')
         self.__send_main_from()
         for item in mail_to:
@@ -93,6 +101,15 @@ class SEND_MAIL:
 
 
     def add_attachment(self, subject, text, filepaths):
+        '''To add attachments, subject and text together to make body
+
+            Arguements \t
+            subject: Subject of email \t
+            text: Text body \t
+            filepaths: Filepaths of attachments
+
+        '''
+
         try:
             msg = email.mime.multipart.MIMEMultipart()
             msg['Subject'] = subject
@@ -101,12 +118,13 @@ class SEND_MAIL:
             for filepath in filepaths:
                 filepath = filepath.strip()
                 if filepath != None and len(filepath) != 0:
+                    attach = None
                     file_type = mimetypes.MimeTypes().guess_type(filepath)[0]
                     # Check if mimetype starts from application
                     if file_type.startswith('application/'):
-                        pdf_file = open(filepath, 'rb')
-                        attach = email.mime.application.MIMEApplication(pdf_file.read(), _subtype=file_type.split('/')[1])
-                        pdf_file.close()
+                        application_file = open(filepath, 'rb')
+                        attach = email.mime.application.MIMEApplication(application_file.read(), _subtype=file_type.split('/')[1])
+                        application_file.close()
                     # Check if attachment is image
                     elif file_type.startswith('image/'):
                         image_file = open(filepath, 'rb')
@@ -119,15 +137,13 @@ class SEND_MAIL:
             raise Exception("Invalid filename")
 
 
-    # TODO: Call this function in destructor
-    '''Send QUIT to server when conversation is complete'''
+    
     def quit(self):
+        '''Send QUIT to server when conversation is complete'''
+
         self.__send_encoded_msg(self.__QUIT)
 
     
-    
-
-
 
 
     
@@ -136,33 +152,37 @@ class SEND_MAIL:
 
     # <------------------------T----------To connect to smtp server------------------------------------------>
     
-    '''Function which connects to smtp server'''
+    
     def __connect(self):
-            # Start TCP connection with smtp server
-            self.main_socket = socket(AF_INET, SOCK_STREAM)
-            self.main_socket.settimeout(self.__TIMEOUT)
-            self.main_socket.connect((self.__HOST, self.__SSL_PORT))
-            self.__ssl_connect()
-            msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
-            code = int(msg[:3])
-            if self.__debugging:
-                print(msg)
-            
-            if code != 220:
-                raise Exception("Connection Failed")
+        '''Function which connects to smtp server'''
+
+        # Start TCP connection with smtp server
+        self.main_socket = socket(AF_INET, SOCK_STREAM)
+        self.main_socket.settimeout(self.__TIMEOUT)
+        self.main_socket.connect((self.__HOST, self.__SSL_PORT))
+        self.__ssl_connect()
+        msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
+        code = int(msg[:3])
+        if self.__debugging:
+            print(msg)
+        
+        if code != 220:
+            raise Exception("Connection Failed")
 
 
-    '''Saying hello to server to establish connection between client and server'''
+    
     def __say_hello(self):
+        '''Saying hello to server to establish connection between client and server'''
+
         if self.__debugging:
             print('Saying hello to server')
         message = self.__DEFAULT_HELLO_MSG
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
 
     
-    # Alert: Not sure right now whether it really does ssl (Will need to check)
-    '''Function to connect to smtp server with ssl'''
     def __ssl_connect(self):
+        '''Function to connect to smtp server with ssl'''
+
         context = ssl.create_default_context()
         host = self.__HOST
     
@@ -170,17 +190,21 @@ class SEND_MAIL:
 
 
 
-    # TODO : Call this in destructor
-    '''Function to close the connection with smtp server'''
+    
+   
     def __close__connection(self):
+        '''Function to close the connection with smtp server'''
+
         self.main_socket.close()
 
 
 
     #<---------------------------------------------------AUTH----------------------------------------------------->
 
-    '''Function which does the authentication part'''
+    
     def __login(self):
+        '''Function which does the authentication part'''
+
         # Tell smtp server for authentication
         code, reply = self.__send_encoded_msg(self.__AUTH_MSG)
         
@@ -207,8 +231,10 @@ class SEND_MAIL:
     
     # <-----------------------------------------Send mail-------------------------------------------------->
 
-    '''Send "mail from" to smtp server'''
+   
     def __send_main_from(self):
+        '''Send "mail from" to smtp server'''
+
         msg = self.__MAIL_FROM + "<" + self.__email + "> "
         code, reply = self.__send_encoded_msg(msg)
         # If reponse code is not 250 then sender mail is not valid
@@ -216,9 +242,10 @@ class SEND_MAIL:
             raise Exception('Invalid sender mail')
 
 
-    '''Send whom to send mail to smtp server'''
-    # mail_to : email address of receiver
+
     def __send__RCPT_TO(self, mail_to):
+        '''Send whom to send mail to smtp server'''
+
         msg = self.__RCPT_TO + "<" + mail_to + ">"
         code, reply = self.__send_encoded_msg(msg)
         # If code is not 250 then receiver mail is not valid
@@ -226,9 +253,10 @@ class SEND_MAIL:
             raise Exception('Invalid receiver mail')
 
 
-    '''Send subject and body of mail to server'''
-    # data: body of mail
+
     def __send__DATA(self, data):
+        '''Send subject and body of mail to server'''
+
         # Send "DATA" to smtp server
         code, reply = self.__send_encoded_msg(self.__DATA)
         # If code is not 354 then something is wrong with smtp server
@@ -243,8 +271,6 @@ class SEND_MAIL:
         # If response code is not 250 then mail raise exception mail not sent successfully
         if code != 250:
             raise Exception('Mail not sent successfully! Please try again')
-        
-        # print('Mail sent successfully')
 
    
 
@@ -276,14 +302,6 @@ if __name__ == "__main__":
     load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    # ins = SEND_MAIL(old_mail, old_pass, debug = True)
-    # email_send = "rohitkc2810@gmail.com"
-    # subject = input('Enter the subject: ')
-    # subject = "This is to check attachment part"
-    # body = "He kaskai chalat mag"
-    # body = ins.add_attachment("Subject of email", "Body of attachment email", "/home/rohit/Downloads/SIH-certificate.pdf")
-    
-    # ins.send_email(email_send.split(';'), data = body)
     filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png", "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
     for filepath in filepaths:
         print(mimetypes.MimeTypes().guess_type(filepath)[0])

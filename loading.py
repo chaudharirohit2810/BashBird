@@ -2,7 +2,7 @@ import curses, time
 from threading import *
 
 
-'''Class which implements loading on screen'''
+
 #  Public Functions     Functionality
 #------------------------------------------------------------------------------------------------------------
 # Constructor           Required Arguements: stdscr(Standard screen of curses)
@@ -10,6 +10,13 @@ from threading import *
 # stop                  To stop the loading
 
 class Loading:
+    '''Class which implements loading on screen
+
+    Arguements \t
+    stdscr: Standard screen attribute of curses
+
+    '''
+    
     #<!---------------------------------------------------Variables------------------------------------------->
     __stdscr = None
     __text = "LOADING"
@@ -18,15 +25,14 @@ class Loading:
     __count = 10
 
     #<!----------------------------------------------Functions--------------------------------------------------->
-    '''Constructor'''
-    # Arguements
-    # Stdscr    Standard screen attribute of curses
     def __init__(self, stdscr):
         self.__stdscr = stdscr
 
 
-    '''To show the loading text on terminal'''
+    
     def __load(self):
+        '''To show the loading text on terminal'''
+
         curses.curs_set(0)
         self.__stdscr.clear()
         temp_count = 1
@@ -47,8 +53,10 @@ class Loading:
             self.__stdscr.refresh()
         
 
-    '''To start loading'''
+    
     def start(self):
+        '''To start loading'''
+        
         self.__is_loading = True
         # create the thread to show loading
         self.__thread = Thread(target=self.__load)
@@ -56,8 +64,10 @@ class Loading:
         self.__thread.start()
 
 
-    '''To stop loading'''
+    
     def stop(self):
+        '''To stop loading'''
+
         # making the loading false which stops the while loop in thread
         self.__is_loading = False
 

@@ -5,11 +5,17 @@ from SMTP.main import SEND_MAIL
 from threading import Thread
 from main_menu import Main_Menu
 from login_instructions import Instructions
-from Title import Title
+import utils
 
 
 
 class LOGIN_UI:
+    '''Class which shows login screen
+
+        Arguements \t
+        stdscr: Standard screen of curses
+
+    '''
 
 
     #<!------------------------------------------Variables------------------------------------------------->
@@ -23,9 +29,6 @@ class LOGIN_UI:
     __width = 1
     __y_end = 0
 
-    # To implement authentication loading
-    # __is_authenticating = False
-
     # options for bottom bar which shows all the instructions to follow
     __options = [
         {'key': 'e', 'msg': 'Edit email'},
@@ -36,21 +39,21 @@ class LOGIN_UI:
     ]
 
     #<!----------------------------------------------------Functions-------------------------------------->
-    '''Constructor of class'''
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         self.__set_values()
         self.__main()
 
 
-    '''To set the default layout of login screen'''
     # Arguements:
     # email: Default email to show
     # password: Pasword to show
     # isEdit: If none don't show save message else show save message based on True or False value
     def __setup_layout(self, email, password, isEdit = None):
+        '''To set the default layout of login screen'''
+
         self.__stdscr.clear()
-        Title(self.__stdscr, "LOGIN")
+        utils.set_title(self.__stdscr, "LOGIN")
         # Setting up title and padding rectangle
         rectangle(self.__stdscr, self.__y_start - 3, self.__x_start - 4, self.__y_end , self.__x_end + 6)
         title = " Login to your account ".upper()
@@ -85,9 +88,9 @@ class LOGIN_UI:
 
         self.__stdscr.refresh()
 
-
-    '''Edit box for login and password'''
+  
     def __edit_box(self, email, password, posy, posx, isPass = False):
+        '''Edit box for login and password'''
         
         # TODO: Use isPass to show asterisk for password
         nol = 1
@@ -127,20 +130,17 @@ class LOGIN_UI:
             return box_email.gather()
 
 
-    '''Main function which setups the whole login page'''
     def __main(self):
+        '''Main function which setups the whole login page'''
+
         curses.curs_set(0)
         self.__setup_layout("", "")
         key = 1
         email = ""
         password = ""
-        Title(self.__stdscr, "LOGIN")
-        self.__show_staus_message("Please read login instructions before logging in!!", time_to_show=2)
+        utils.set_title(self.__stdscr, "LOGIN")
+        utils.show_status_message(self.__stdscr, "Please read login instructions before logging in!!", time_to_show=2)
         while key != ord('q'):
-            
-            
-            
-
             # If the key is e then make the email box active
             if key == ord('e'):
                 email = self.__edit_box(email, "*" * len(password), self.__y_start + 1, self.__x_start + 2)
@@ -166,32 +166,36 @@ class LOGIN_UI:
         sys.exit()
 
 
-    '''To Authenticate using SMTP Server'''
+    
     # Arguements: 
     # email: Email of user
     # password: Password of user
     def __authenticate(self, email, password):
+        '''To Authenticate using SMTP Server'''
+
         # Show the authenticating message
-        self.__show_staus_message("Authenticating", isLoading=True)
+        utils.show_status_message(self.__stdscr, "Authenticating", isLoading=True)
         try:
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
             SEND_MAIL(email, password)
             self.__store_in_file(email, password)
-            self.__show_staus_message("Authentication Successful", time_to_show=1)
+            utils.show_status_message(self.__stdscr, "Authentication Successful", time_to_show=1)
             # Show main menu after authentication is completed
             main_menu = Main_Menu(self.__stdscr)
             main_menu.show()
 
         except Exception as e:
-            self.__show_staus_message(str(e), time_to_show=3)
+            utils.show_status_message(self.__stdscr, str(e), time_to_show=3)
 
 
-    '''To store email and password in separate file'''
+   
     # Arguements: 
     # email : Email of user
     # password: Password of user
     def __store_in_file(self, email, password):
+        '''To store email and password in separate file'''
+
         # Get the environment filepath
         user = getpass.getuser()
         dir_path = '/home/'+user+'/.termmail'
@@ -204,32 +208,9 @@ class LOGIN_UI:
 
 
     #<!------------------------------------------------Utils------------------------------------------------->
-    '''To show status message while authenticating'''
-    # Arguements:
-    # msg: Message to show
-    # time_to_show: Time for which message needs to be shown
-    # isLoading: If the text is related to loading
-     # TODO: Implement loading also
-    def __show_staus_message(self, msg, time_to_show = -1, isLoading=False):
-        # Blink the text if it is in loading state
-        if isLoading:
-            self.__stdscr.attron(curses.A_BLINK)
-
-        self.__stdscr.attron(curses.A_STANDOUT)
-        self.__stdscr.attron(curses.A_BOLD)
-        self.__stdscr.addstr(self.__height - 5, self.__width // 2 - len(msg) // 2, " " + str(msg) +  " ")
-        self.__stdscr.refresh()
-        if time_to_show != -1:
-            time.sleep(time_to_show)
-
-        self.__stdscr.attroff(curses.A_STANDOUT)
-        self.__stdscr.attroff(curses.A_BOLD)
-
-        if isLoading:
-            self.__stdscr.attroff(curses.A_BLINK)
-
-
     def __is_valid(self, email, password):
+        '''Check if email and password are valid'''
+
         if len(email.strip()) == 0 or len(password.strip()) == 0:
             raise Exception("Please enter valid email and password")
 

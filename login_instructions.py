@@ -1,11 +1,16 @@
 from curses.textpad import rectangle
 import textwrap
-import curses
-from Title import Title
+import curses, utils
 from BottomBar import BottomBar
 
 
 class Instructions:
+    '''Class which shows login instructions
+
+        Arguements \t
+        stdscr: Standard screen of curses 
+
+    '''
 
     # <!----------------------------------------------Variables----------------------------------------------------->
     # Standard screen of curses
@@ -33,17 +38,17 @@ class Instructions:
 
     __screen_size_msg = "Screen size is too small! Please increase screen size"
 
+
     # <!----------------------------------------------Functions----------------------------------------------------->
-    '''Constructor of Class'''
-    # Arguements:
-    # stdscr: Standard screen of curses
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         self.__set_main_layout()
 
 
-    '''Main function which setups the layout'''
+   
     def __set_main_layout(self):
+        '''Main function which setups the layout'''
+
         key = 0
 
         while key != ord('q'):
@@ -53,7 +58,7 @@ class Instructions:
                 
                 wrapper = textwrap.TextWrapper(width=w - 3)
                 self.__stdscr.clear()
-                Title(self.__stdscr, "LOGIN INSTRUCTIONS")
+                utils.set_title(self.__stdscr, "LOGIN INSTRUCTIONS")
                 start = self.__setup_array_text(
                     wrapper, w, 2, self.__app_password, " Login Using App Password (Recommended):  ")
                 start = self.__setup_array_text(
@@ -73,7 +78,7 @@ class Instructions:
                 self.__stdscr.refresh()
 
 
-    '''To set up the text '''
+    
     # Arguements:
     # wrapper: Textwrap wrapper to wrap the text
     # width: Width of the screen
@@ -81,6 +86,8 @@ class Instructions:
     # text: Text to show
     # title: Title of text
     def __setup_array_text(self, wrapper, width, st, text, title):
+        '''To set up the text '''
+
         old_start = st
         start = old_start + 1
         start += 1
