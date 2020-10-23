@@ -419,12 +419,14 @@ class IMAP:
             Arguements \t
             index: index of email 
         '''
-        command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)"
-        code, msg = self.__send_encoded_msg(command)
-        if code == "OK":
-            command = "a02 EXPUNGE"
-            code, msg = self.__send_encoded_msg(command)
-            if code == "OK":
+        command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)" + self.__MAIL_NEW_LINE
+        self.__main_socket.send(command.encode())
+        success, msg = self.__get_whole_message()
+        if success:
+            command = "a02 EXPUNGE" + self.__MAIL_NEW_LINE
+            self.__main_socket.send(command.encode())
+            success, msg = self.__get_whole_message()
+            if success:
                 number_of_mails = 0
                 # Get the number of mails in mailbox
                 lines_arr = msg.splitlines()
@@ -437,9 +439,9 @@ class IMAP:
                         continue
                 return number_of_mails
             else:
-                raise Exception("Response code is not ok for expunge")
+                raise Exception("Something went wrong! Please try again")
         else:
-            raise Exception("Response code is not ok for store")
+            raise Exception("Something went wrong! Please try again")
 
 
 
@@ -784,8 +786,7 @@ if __name__ == "__main__":
     folders = imap.get_mailboxes()
 
     # print(folders)
-    num = imap.select_mailbox(folders[0])
-    # imap.fetch_text_body(num - 11)
-    emails = imap.fetch_email_headers(num, 20)
-    print(emails)
+    num = imap.select_mailbox(folders[2])
+    for i in range(1, 20):
+        imap.delete_email(i)
    

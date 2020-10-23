@@ -42,7 +42,7 @@ class Write_Mail_UI:
     # Default Input messages
     __default_subject_input_msg = "Enter Subject of Mail (Press Ctrl + G to save)"
     __default_body_input_msg = "Enter body of Mail (Press Ctrl + G to save)"
-    __default_attachment_msg = "Enter attachments absolute path"
+    __default_attachment_msg = "Enter attachments absolute path (Press CTRL + G to Save)"
 
 
     # Key variables (what happens when which key is pressed)
@@ -142,8 +142,8 @@ class Write_Mail_UI:
         self.__stdscr.addstr(from_start, 2, self.__email_to)
 
         # Subject part of UI
-        rectangle(self.__stdscr, from_start + from_block_total, 0, from_start + from_block_total + subject_lines, w - 1)
-        self.__stdscr.addstr(from_start + from_block_total, 2, " SUBJECT ")
+        rectangle(self.__stdscr, from_start + from_block_total - 1, 0, from_start + from_block_total + subject_lines, w - 1)
+        self.__stdscr.addstr(from_start + from_block_total - 1, 2, " SUBJECT ")
 
         # used to divide subject in multiple lines
         wrapper = textwrap.TextWrapper(width=w - 3)
