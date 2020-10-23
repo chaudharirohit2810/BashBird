@@ -96,7 +96,10 @@ class IMAP:
     def __ssl_connect(self):
         '''To wrap socket in SSL'''
 
-        self.__main_socket = ssl.wrap_socket(self.__main_socket)
+        context = ssl.create_default_context()
+        host = self.__HOST
+        self.__main_socket = context.wrap_socket(self.__main_socket, server_hostname=host)
+        
 
 
 
@@ -226,13 +229,14 @@ class IMAP:
 
         try:
             command = "a02 FETCH " + str(start - count) + ":" + str(start) + \
-                " (BODY[HEADER.FIELDS (DATE SUBJECT FROM)])" + \
+                " (FLAGS BODY[HEADER.FIELDS (DATE SUBJECT FROM)])" + \
                    self.__MAIL_NEW_LINE
             self.__main_socket.send(command.encode())
+            
             # Get the whole output from server
             # is_attachment is true as no need to check for attachment
             success, msg = self.__get_whole_message()
-            # print(msg)
+            print(msg)
             emails = []
             # If the request success then parse the header
             if success:
@@ -415,32 +419,27 @@ class IMAP:
             Arguements \t
             index: index of email 
         '''
-
-        try:
-            command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)"
+        command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)"
+        code, msg = self.__send_encoded_msg(command)
+        if code == "OK":
+            command = "a02 EXPUNGE"
             code, msg = self.__send_encoded_msg(command)
             if code == "OK":
-                command = "a02 EXPUNGE"
-                code, msg = self.__send_encoded_msg(command)
-                if code == "OK":
-                    number_of_mails = 0
-                    # Get the number of mails in mailbox
-                    lines_arr = msg.splitlines()
-                    for item in lines_arr:
-                        try:
-                            tokens = item.split(" ")
-                            if tokens[2] == "EXISTS":
-                                number_of_mails = int(tokens[1])
-                        except:
-                            continue
-
-                    return True, number_of_mails
-                else:
-                    raise Exception("Some error occured")
+                number_of_mails = 0
+                # Get the number of mails in mailbox
+                lines_arr = msg.splitlines()
+                for item in lines_arr:
+                    try:
+                        tokens = item.split(" ")
+                        if tokens[2] == "EXISTS":
+                            number_of_mails = int(tokens[1])
+                    except:
+                        continue
+                return number_of_mails
             else:
-                raise Exception("Some error occured")
-        except:
-            return False, 0
+                raise Exception("Response code is not ok for expunge")
+        else:
+            raise Exception("Response code is not ok for store")
 
 
 
@@ -786,5 +785,7 @@ if __name__ == "__main__":
 
     # print(folders)
     num = imap.select_mailbox(folders[0])
-    imap.fetch_text_body(num - 11)
+    # imap.fetch_text_body(num - 11)
+    emails = imap.fetch_email_headers(num, 20)
+    print(emails)
    

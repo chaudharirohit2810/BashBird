@@ -51,6 +51,9 @@ class EMAIL_LIST:
     __curr_confirm_index = 0
     # TODO: Later changes this array to title and function dictionary
     __confirm_menu =["YES", "NO"]
+
+    # Check if emails are getting fetched in separate thread
+    __is_fetching_emails = True
     
 
 
@@ -91,32 +94,25 @@ class EMAIL_LIST:
             # Start loading until mails are fetched
             loading = Loading(self.__stdscr)
             loading.start()
-            
             # Select particular mailbox
             num = self.__imap.select_mailbox(self.__directory_name)
-
             self.num = num
-
             if num == 0:
                 loading.stop()
                 self.__is_error = True
                 msg = "Nothing in " + self.__directory_name[1:-1] + "!! Press 'q' to go back"
                 utils.show_message(self.__stdscr, msg)
                 return
-            
-            # Fetch atleast 15 mails if total mails are less than that then fetch total number of mails
-            count = min(num - 1, 30)
+
+            # Fetch atleast 50 mails if total mails are less than that then fetch total number of mails
+            count = min(num - 1, 50)
 
             emails = self.__imap.fetch_email_headers(num, count)
-
             # TODO: If the request failed then show the error message
             self.__main_list = emails
             self.emails = emails
-
-
             # Stop the loading
             loading.stop()
-
         except Exception as e:
             # To show the error message
             loading.stop()
@@ -124,9 +120,6 @@ class EMAIL_LIST:
             utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
             
             
-
-
-    
     def __set_main_layout(self):
         '''To setup the main layout of page with scrollable behaviour'''
 
@@ -252,8 +245,12 @@ class EMAIL_LIST:
     # height, width: height and width of screen
     # is_focused: if the email item is focused or not
     # Returns the total height of mail item
-    def __set_mail_item(self, start, subject, mail_from, date, height, width, is_focused=False):
+    def __set_mail_item(self, start, subject, mail_from, date, height, width, is_focused=False, is_seen = False):
         '''To show the single mail item'''
+        curses.init_pair(10, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        if is_focused:
+            self.__stdscr.attron(curses.color_pair(10))
+            self.__stdscr.attron(curses.A_BOLD)
 
         # Formate date and mail from
         mail_from = "From: " + mail_from
@@ -261,9 +258,11 @@ class EMAIL_LIST:
 
         # if the mail item is focused then make that a bold
         # TODO: Use different method to focus email as bold need to used for non-read mails
-        if is_focused:
-            # subject = subject + "This is focused"
-            self.__stdscr.attron(curses.A_BOLD)
+        # if is_focused:
+        #     # subject = subject + "This is focused"
+        #     self.__stdscr.attron(curses.A_BOLD)
+
+        old_start  = start - 1
 
         # Determine start x-position of date
         # TODO: Later also check the end of subject so date can be shifted to new line
@@ -305,6 +304,8 @@ class EMAIL_LIST:
         start += 1
 
         if is_focused:
+            self.__stdscr.attroff(curses.color_pair(10))
+            rectangle(self.__stdscr, old_start, 0, start - 1, width - 1)
             self.__stdscr.attroff(curses.A_BOLD)
 
         # Return the end of layout to show next email
@@ -336,9 +337,8 @@ class EMAIL_LIST:
                     if self.__curr_confirm_index == 0:
                         utils.show_status_message(self.__stdscr, "Deleting email....", isLoading=True)
                         try:
-                            isDeleted, num = self.__imap.delete_email(self.num - self.__arr_position)
-                            if not isDeleted:
-                                raise Exception("Something went wrong! Mail deletion failed, please try again")
+                            num = self.__imap.delete_email(self.num - self.__arr_position)
+                            
 
                             # Set the new mail count
                             self.num = num
