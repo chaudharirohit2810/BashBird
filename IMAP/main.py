@@ -6,6 +6,7 @@ import unicodedata
 import os
 import base64
 import getpass
+import html
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 
@@ -92,16 +93,13 @@ class IMAP:
         # Login after connection
         self.__login()
 
-
     def __ssl_connect(self):
         '''To wrap socket in SSL'''
 
         context = ssl.create_default_context()
         host = self.__HOST
-        self.__main_socket = context.wrap_socket(self.__main_socket, server_hostname=host)
-        
-
-
+        self.__main_socket = context.wrap_socket(
+            self.__main_socket, server_hostname=host)
 
     # <!--------------------------------------------Authentication-------------------------------------------->
 
@@ -120,8 +118,6 @@ class IMAP:
         # Check if second element of tokens is OK if not raise exception
         if imap_msg_tokens[1] != "OK":
             raise Exception("Invalid email or password")
-
-
 
     # <!-------------------------------------Commands related to IMAP----------------------------------------->
 
@@ -153,7 +149,6 @@ class IMAP:
                 folders.append(name[:-1])
         # Return list of folders except last attribute
         return folders
-
 
     def select_mailbox(self, name):
         '''To select particular mail box
@@ -204,7 +199,6 @@ class IMAP:
                     continue
             return number_of_mails
 
-
     def close_mailbox(self):
         '''To deselect the selected mailbox'''
 
@@ -218,10 +212,9 @@ class IMAP:
         except:
             pass
 
-
     def fetch_email_headers(self, start, count=1):
         '''To fetch email subject, mail from and date
-        
+
             Arguements \t
             start: Start position from which to fetch \t
             count: Number of emails to fetch (default: 1)
@@ -230,9 +223,9 @@ class IMAP:
         try:
             command = "a02 FETCH " + str(start - count) + ":" + str(start) + \
                 " (FLAGS BODY[HEADER.FIELDS (DATE SUBJECT FROM)])" + \
-                   self.__MAIL_NEW_LINE
+                self.__MAIL_NEW_LINE
             self.__main_socket.send(command.encode())
-            
+
             # Get the whole output from server
             # is_attachment is true as no need to check for attachment
             success, msg = self.__get_whole_message()
@@ -244,7 +237,7 @@ class IMAP:
 
                 for index, item in enumerate(msg):
                     decoded_email = self.__decode_mail_headers(item)
-                    decoded_email['index'] = start - count + index;
+                    decoded_email['index'] = start - count + index
                     emails.insert(0, decoded_email)
 
                 return emails
@@ -253,7 +246,6 @@ class IMAP:
                 raise Exception("Failed to fetch email! Please try again!!")
         except:
             raise Exception("Failed to fetch email! Please try again!!")
-
 
     def get_boundary_id(self, index):
         '''To get boundary id of body
@@ -282,7 +274,6 @@ class IMAP:
         except:
             return None
 
-
     def fetch_text_body(self, index):
         '''To fetch text body of email
 
@@ -297,7 +288,7 @@ class IMAP:
                 is_attachment_present = True
             # Fetch the body
             command_body = "a02 FETCH " + str(index) + \
-                    " (BODY[1])" + self.__MAIL_NEW_LINE
+                " (BODY[1])" + self.__MAIL_NEW_LINE
             self.__main_socket.send(command_body.encode())
             # As attachment is not required
             success, msg = self.__get_whole_message()
@@ -319,8 +310,17 @@ class IMAP:
                     pass
 
                 main = self.__extract_text_from_html(main)
-                main = main.replace('=20', ' ')
-                print(main)
+                temp_body = ""
+                for line in main.splitlines():
+                    try:
+
+                        formatted_line = ' '.join(word for word in line.split()
+                                                  if not word.startswith("="))
+                    except:
+                        pass
+                    temp_body += formatted_line + "\n"
+                main = temp_body.strip('\r\t\n')
+
                 return {
                     'body': main,
                     'is_attachment': is_attachment_present,
@@ -332,7 +332,6 @@ class IMAP:
         except:
             raise Exception("Something went wrong! Body not fetched properly")
 
-
     def get_body_structure(self, index):
         '''To get attachment names
 
@@ -340,9 +339,9 @@ class IMAP:
             index: index of email 
         '''
 
-         # Fetch the body
+        # Fetch the body
         command_body = "a02 FETCH " + str(index) + \
-                " (BODYSTRUCTURE)" + self.__MAIL_NEW_LINE
+            " (BODYSTRUCTURE)" + self.__MAIL_NEW_LINE
         try:
             self.__main_socket.send(command_body.encode())
             success, msg = self.__get_whole_message()
@@ -363,7 +362,6 @@ class IMAP:
             print(e)
             return []
 
-
     def download_attachment(self, index):
         '''To download attachments, Attachments are downloaded in downloads folder by default
 
@@ -375,7 +373,7 @@ class IMAP:
             boundary_id = self.get_boundary_id(index)
             # Fetch the body
             command_body = "a02 FETCH " + str(index) + \
-                    " (BODY[text])" + self.__MAIL_NEW_LINE
+                " (BODY[text])" + self.__MAIL_NEW_LINE
             self.__main_socket.send(command_body.encode())
             success, msg = self.__get_whole_message()
             if boundary_id == None or not success:
@@ -412,14 +410,14 @@ class IMAP:
             print(e)
             raise Exception("Failed to download file! Please try again!!")
 
-
     def delete_email(self, index):
         '''To delete mail
 
             Arguements \t
             index: index of email 
         '''
-        command = "a02 STORE " + str(index) + " +FLAGS (\\Deleted)" + self.__MAIL_NEW_LINE
+        command = "a02 STORE " + \
+            str(index) + " +FLAGS (\\Deleted)" + self.__MAIL_NEW_LINE
         self.__main_socket.send(command.encode())
         success, msg = self.__get_whole_message()
         if success:
@@ -443,8 +441,6 @@ class IMAP:
         else:
             raise Exception("Something went wrong! Please try again")
 
-
-
     # <-----------------------------------------------Utils----------------------------------------------------->
 
     def __send_encoded_msg(self, message):
@@ -456,12 +452,11 @@ class IMAP:
         self.__main_socket.send(message.encode())
         received_msg = self.__main_socket.recv(100024).decode().strip('\r\t\n')
         lines_arr = received_msg.splitlines()
-        
+
         code = lines_arr[-1].split(" ")[1]
         if self.__debugging:
             print("Server: ", received_msg)
         return code, received_msg
-
 
     def __get_whole_message(self):
         '''To get whole reply back from the server'''
@@ -487,7 +482,7 @@ class IMAP:
 
                 if code1 in email_results or code2 in email_results:
                     lines_arr.pop(-1)
-                    
+
                     # Add other lines from array to message
                     for item in lines_arr:
                         msg += item
@@ -510,13 +505,8 @@ class IMAP:
                 # TODO: Later return appropriate message
                 return False, "Request Failed"
 
-    
-
-
-
     # <!------------------------------------------------Base Mail Headers---------------------------------------->
 
-    
     def __separate_mail_headers(self, msg):
         '''Get individual mails from received'''
 
@@ -532,10 +522,9 @@ class IMAP:
                 for item in lines_arr[prev_start + 1:index]:
                     email += item + "\n"
                 prev_start = index + 2
-                ans.append(email) 
-            index += 1  
+                ans.append(email)
+            index += 1
         return ans
-
 
     def __extract_text_from_encoded_words_syntax(self, encoded_words):
         '''Decode subject if it is in encoded words syntax'''
@@ -547,28 +536,27 @@ class IMAP:
             charset = temp[:i1].lower()
             temp = temp[i1:]
 
-            # Get the encoding type            
+            # Get the encoding type
             encoding = temp[1].upper()
             # Get the main text
             main_text = temp[3:]
             # This will be encoded string
             ending_index = main_text.find("?=")
             main_text = main_text[:ending_index]
-            
+
             if encoding == "B":
                 main_text = base64.b64decode(main_text)
             elif encoding == "Q":
-                main_text = quopri.decodestring(main_text)  
+                main_text = quopri.decodestring(main_text)
 
             return main_text.decode(charset), encoded_words.find("?=") + 3
         except Exception as e:
             print(e)
             return encoded_words
 
-
     def __decode_mail_headers(self, msg):
         '''To separate subject, from and date from imap header'''
-        
+
         lines_arr = msg.splitlines()
         index = 0
         subject = ""
@@ -616,13 +604,14 @@ class IMAP:
                 break
             mail_from += line
         mail_from = mail_from.strip()
-    
+
         main_subject = ""
         # Check if the subject is in encoded words syntax
         if subject.startswith("=?"):
             # Normalize the data to ascii
             while subject.startswith("=?"):
-                output, ending_index = self.__extract_text_from_encoded_words_syntax(subject)
+                output, ending_index = self.__extract_text_from_encoded_words_syntax(
+                    subject)
                 main_subject += output
                 subject = subject[ending_index:]
         else:
@@ -633,17 +622,15 @@ class IMAP:
         if mail_from.startswith("=?"):
             # print(date)
             while mail_from.startswith("=?"):
-                output, ending_index = self.__extract_text_from_encoded_words_syntax(mail_from)
+                output, ending_index = self.__extract_text_from_encoded_words_syntax(
+                    mail_from)
                 main_mail_from += output
                 mail_from = mail_from[ending_index:]
         main_mail_from += mail_from
         return {'Subject': main_subject, 'Date': date, 'From': main_mail_from}
-    
-
 
     # <!-------------------------------------------- Body Utils --------------------------------------------------------->
 
-    
     def __get_boundary_indices(self, boundary_id, msg):
         '''To get start indices of boundary_id'''
 
@@ -655,7 +642,6 @@ class IMAP:
         # Return the array
         return res
 
-
     def __get_email_body_list(self, boundary_id, msg):
         '''Separate bodies from email'''
 
@@ -666,12 +652,12 @@ class IMAP:
         while i < len(boundary_indices) - 1:
             # Select body between two occurunces of boundary_id
             temp_msg = msg[boundary_indices[i]:boundary_indices[i + 1]].strip()
-            
-            body_list.append('\n'.join(line for line in temp_msg.splitlines()[1:]))
+
+            body_list.append(
+                '\n'.join(line for line in temp_msg.splitlines()[1:]))
             i += 1
         # Return all the bodies present in email
         return body_list
-
 
     def __separate_body(self, body):
         '''Separate header and main content of body'''
@@ -690,35 +676,34 @@ class IMAP:
         # Return the header and body
         return header, body
 
-
     def __get_body_headers(self, header):
         '''Get body headers'''
-       
+
         content_type = ""
-        content_encoding=""
+        content_encoding = ""
         content_type_key = "content-type:"
         content_encoding_key = "content-transfer-encoding:"
         boundary_key = "boundary="
-        boundary=None
+        boundary = None
         for line in header.splitlines():
             line = line.lower()
-            
+
             if line.find(boundary_key) != -1:
                 boundary = line[line.find(boundary_key) + len(boundary_key):]
                 boundary = boundary[:boundary.find(';')]
-                
+
             # To find the content type
             if line.find(content_type_key) != -1:
                 start = line.find(content_type_key) + len(content_type_key)
                 content_type = line[start:]
                 content_type = content_type[:content_type.find(';')].strip()
-            
+
             # To find the content transfer encoding
             elif line.find(content_encoding_key) != -1:
-                content_encoding = line[line.find(content_encoding_key) + len(content_encoding_key):].strip()
+                content_encoding = line[line.find(
+                    content_encoding_key) + len(content_encoding_key):].strip()
 
         return content_type, content_encoding, boundary
-
 
     def __get_attachment_file_name(self, header):
         '''To get the attachment file name from header'''
@@ -737,7 +722,6 @@ class IMAP:
                 return True, name
         return False, "File does not exits"
 
-
     def __get_cleaned_up_body(self, header, body):
         '''To get text from body according to content-type and content-transfer-encoding'''
 
@@ -746,12 +730,12 @@ class IMAP:
             text = base64.b64decode(text).decode('utf-8')
         text = self.__extract_text_from_html(text)
         try:
-            text = quopri.decodestring(text).decode()       
+            text = quopri.decodestring(text).decode()
         except Exception as e:
             pass
-        ans = '\n'.join(line for line in text.splitlines() if line).strip('\r\t\n')
+        ans = '\n'.join(line for line in text.splitlines()
+                        if line).strip('\r\t\n')
         return ans
-
 
     def __extract_text_from_html(self, body):
         '''To get text from html'''
@@ -762,8 +746,6 @@ class IMAP:
             for extras in soup(['script', 'style']):
                 extras.extract()
             text = soup.get_text()
-            # Normalize the data to ascii
-            text = unicodedata.normalize("NFKD",text)
         except Exception as e:
             text = body
         ans = ""
@@ -777,7 +759,6 @@ class IMAP:
         return ans
 
 
-
 if __name__ == "__main__":
     load_dotenv('./.env')
     old_mail = os.getenv('EMAIL')
@@ -786,7 +767,5 @@ if __name__ == "__main__":
     folders = imap.get_mailboxes()
 
     # print(folders)
-    num = imap.select_mailbox(folders[2])
-    for i in range(1, 20):
-        imap.delete_email(i)
-   
+    num = imap.select_mailbox(folders[0])
+    result = imap.fetch_text_body(num - 5)
