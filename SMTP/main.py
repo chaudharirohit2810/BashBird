@@ -4,17 +4,18 @@ from dotenv import load_dotenv
 import os
 from email.base64mime import body_encode as encode_64
 import email.mime.multipart
-import email.mime.text, email.mime.image, email.mime.application
+import email.mime.text
+import email.mime.image
+import email.mime.application
 import mimetypes
 
 
-
 # Public Functions     Functionality
-#---------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------
 # Constructor          Logins to smtp server using provided email and password
 # send_email           Sends mail to mail server
 
-class SEND_MAIL:
+class SMTP:
     '''Class which does all the part of IMAP Protocol
 
     Arguements: \t
@@ -24,9 +25,7 @@ class SEND_MAIL:
     debugging: Utility variable to print sent and received messages
     '''
 
-
-
-    #<--------------------------------------------Variables----------------------------------------->
+    # <--------------------------------------------Variables----------------------------------------->
 
     # Stores socket which connects to mail server
     main_socket = None
@@ -42,48 +41,41 @@ class SEND_MAIL:
     __END_MSG = "\r\n.\r\n"
 
     # Default timeout for socket
-    __TIMEOUT = 15 # 15 seconds for now
+    __TIMEOUT = 15  # 15 seconds for now
 
     # Port and host to connect to smtp server
     # TODO: Make a dictionary which stores port and hostname of mail servers like google and outlook
-    __PORT = 587 
+    __PORT = 587
     __SSL_PORT = 465
     __HOST = ''
 
-    # Utility variable to decide 
-    __debugging = False # whether to print debugging output
+    # Utility variable to decide
+    __debugging = False  # whether to print debugging output
 
     # email and password
     __email = ""
     __password = ""
 
+    # <-------------------------------------------Functions----------------------------------------------->
 
+    def __init__(self, email, password, smtp_server="smtp.gmail.com", ssl_port=465, debug=False):
+        self.__email = email
+        self.__password = password
+        self.__HOST = smtp_server
+        self.__debugging = debug
+        self.__SSL_PORT = ssl_port
 
-    #<-------------------------------------------Functions----------------------------------------------->
+        # Connect to smtp server
+        self.__connect()
 
-   
-    def __init__(self, email, password, smtp_server = "smtp.gmail.com", ssl_port=465, debug = False):
-            self.__email = email 
-            self.__password = password
-            self.__HOST = smtp_server
-            self.__debugging = debug
-            self.__SSL_PORT=ssl_port
+        # Say "EHLO" to server
+        self.__say_hello()
 
-            # Connect to smtp server
-            self.__connect()
-
-            # Say "EHLO" to server
-            self.__say_hello()
-
-            # Login using email and password
-            self.__login()
-
-
-
+        # Login using email and password
+        self.__login()
 
     # <--------------------------------------------Public functions---------------------------------------------->
 
-        
     def send_email(self, mail_to, data):
         '''Function which is used to send mail
 
@@ -96,9 +88,8 @@ class SEND_MAIL:
         # print('Sending mail..................')
         self.__send_main_from()
         for item in mail_to:
-            self.__send__RCPT_TO(item.strip())   
+            self.__send__RCPT_TO(item.strip())
         self.__send__DATA(data)
-
 
     def add_attachment(self, subject, text, filepaths):
         '''To add attachments, subject and text together to make body
@@ -123,36 +114,31 @@ class SEND_MAIL:
                     # Check if mimetype starts from application
                     if file_type.startswith('application/'):
                         application_file = open(filepath, 'rb')
-                        attach = email.mime.application.MIMEApplication(application_file.read(), _subtype=file_type.split('/')[1])
+                        attach = email.mime.application.MIMEApplication(
+                            application_file.read(), _subtype=file_type.split('/')[1])
                         application_file.close()
                     # Check if attachment is image
                     elif file_type.startswith('image/'):
                         image_file = open(filepath, 'rb')
-                        attach = email.mime.image.MIMEImage(image_file.read(), _subtype=file_type.split('/')[1])
+                        attach = email.mime.image.MIMEImage(
+                            image_file.read(), _subtype=file_type.split('/')[1])
                         image_file.close()
-                    attach.add_header("Content-Disposition", "attachment", filename=os.path.basename(filepath))
+                    attach.add_header(
+                        "Content-Disposition", "attachment", filename=os.path.basename(filepath))
                     msg.attach(attach)
             return msg.as_string()
         except:
             raise Exception("Invalid filename")
 
-
-    
     def quit(self):
         '''Send QUIT to server when conversation is complete'''
 
         self.__send_encoded_msg(self.__QUIT)
 
-    
-
-
-    
-    # <-------------------------------------Private functions-----------------------------------------------> 
-
+    # <-------------------------------------Private functions----------------------------------------------->
 
     # <------------------------T----------To connect to smtp server------------------------------------------>
-    
-    
+
     def __connect(self):
         '''Function which connects to smtp server'''
 
@@ -165,12 +151,10 @@ class SEND_MAIL:
         code = int(msg[:3])
         if self.__debugging:
             print(msg)
-        
+
         if code != 220:
             raise Exception("Connection Failed")
 
-
-    
     def __say_hello(self):
         '''Saying hello to server to establish connection between client and server'''
 
@@ -179,59 +163,44 @@ class SEND_MAIL:
         message = self.__DEFAULT_HELLO_MSG
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
 
-    
     def __ssl_connect(self):
         '''Function to connect to smtp server with ssl'''
 
         context = ssl.create_default_context()
         host = self.__HOST
-    
-        self.main_socket = context.wrap_socket(self.main_socket, server_hostname=host)
 
+        self.main_socket = context.wrap_socket(
+            self.main_socket, server_hostname=host)
 
-
-    
-   
     def __close__connection(self):
         '''Function to close the connection with smtp server'''
 
         self.main_socket.close()
 
+    # <---------------------------------------------------AUTH----------------------------------------------------->
 
-
-    #<---------------------------------------------------AUTH----------------------------------------------------->
-
-    
     def __login(self):
         '''Function which does the authentication part'''
 
         # Tell smtp server for authentication
         code, reply = self.__send_encoded_msg(self.__AUTH_MSG)
-        
 
         # Send email
-        encoded_mail = encode_64(self.__email.encode('ascii'), eol = '')
+        encoded_mail = encode_64(self.__email.encode('ascii'), eol='')
         code, reply = self.__send_encoded_msg(encoded_mail)
-        
-        
+
         # Send password of mail
-        encoded_pass = encode_64(self.__password.encode('ascii'), eol = '')
+        encoded_pass = encode_64(self.__password.encode('ascii'), eol='')
         pass_msg = encoded_pass
         code, reply = self.__send_encoded_msg(pass_msg)
         if code == 235:
             # print('You are logged in')
             pass
-        else: 
+        else:
             raise Exception('Invalid username or password')
 
-
-
-
-
-    
     # <-----------------------------------------Send mail-------------------------------------------------->
 
-   
     def __send_main_from(self):
         '''Send "mail from" to smtp server'''
 
@@ -240,8 +209,6 @@ class SEND_MAIL:
         # If reponse code is not 250 then sender mail is not valid
         if code != 250:
             raise Exception('Invalid sender mail')
-
-
 
     def __send__RCPT_TO(self, mail_to):
         '''Send whom to send mail to smtp server'''
@@ -252,8 +219,6 @@ class SEND_MAIL:
         if code != 250:
             raise Exception('Invalid receiver mail')
 
-
-
     def __send__DATA(self, data):
         '''Send subject and body of mail to server'''
 
@@ -263,7 +228,7 @@ class SEND_MAIL:
         if code != 354:
             raise Exception('Something went wrong')
 
-        self.main_socket.send(data.encode()) 
+        self.main_socket.send(data.encode())
 
         # Send end message to tell smtp server that mail has ended
         code, reply = self.__send_encoded_msg(self.__END_MSG)
@@ -272,13 +237,9 @@ class SEND_MAIL:
         if code != 250:
             raise Exception('Mail not sent successfully! Please try again')
 
-   
-
-
-
-
     # <-----------------------------------------------Utils----------------------------------------------------->
     ''' Utility function to send encoded message to smtp server'''
+
     def __send_encoded_msg(self, message):
         if self.__debugging:
             print("Client: ", message)
@@ -287,22 +248,14 @@ class SEND_MAIL:
         received_msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
         if self.__debugging:
             print(received_msg)
-        return int(received_msg[:3]), received_msg[4:] 
-        
-        
-
-
-    
-
-        
-            
+        return int(received_msg[:3]), received_msg[4:]
 
 
 if __name__ == "__main__":
     load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png", "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
+    filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png",
+                 "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
     for filepath in filepaths:
         print(mimetypes.MimeTypes().guess_type(filepath)[0])
-

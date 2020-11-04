@@ -7,7 +7,7 @@ import getpass
 from curses.textpad import Textbox, rectangle
 from BottomBar import BottomBar
 from dotenv import load_dotenv
-from SMTP.main import SEND_MAIL
+from SMTP.main import SMTP
 from threading import Thread
 import utils
 from email.base64mime import body_encode as encode_64
@@ -340,7 +340,7 @@ class Write_Mail_UI:
                     try:
                         self.__check_validation()
                         # Authenticate
-                        smtp = SEND_MAIL(self.__email_from, self.__pass)
+                        smtp = SMTP(self.__email_from, self.__pass)
                         receiver_emails = self.__email_to.split(';')
                         data = smtp.add_attachment(
                             self.__subject, self.__body, self.__attachments.split(';'))

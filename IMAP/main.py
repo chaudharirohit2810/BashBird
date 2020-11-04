@@ -28,7 +28,6 @@ class IMAP:
     password: User password\t
     imap_server: Url of imap server (default: gmail)\t
     debugging: Utility variable to print sent and received messages
-
     '''
 
     # <------------------------------------------------------Variables------------------------------------------>
@@ -71,7 +70,6 @@ class IMAP:
     # <----------------------------------------------Private functions------------------------------------------->
 
     # <!-------------------------------------------Connection--------------------------------------------------->
-
     def __connect(self):
         '''Connect to IMAP Server'''
 

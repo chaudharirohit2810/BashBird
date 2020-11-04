@@ -5,7 +5,7 @@ import getpass
 import sys
 from login import LOGIN_UI
 from dotenv import load_dotenv
-from SMTP.main import SEND_MAIL
+from SMTP.main import SMTP
 from main_menu import Main_Menu
 from get_credentials import Credentials
 
@@ -32,7 +32,7 @@ def authenticate():
     # Check if email and password present in file
     if email != None and password != None:
         try:
-            SEND_MAIL(email, password)
+            SMTP(email, password)
         except:
             # Credentials are invalid
             flag = False

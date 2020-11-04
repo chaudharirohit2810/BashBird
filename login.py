@@ -4,7 +4,7 @@ import sys
 import getpass
 from curses.textpad import rectangle, Textbox
 from BottomBar import BottomBar
-from SMTP.main import SEND_MAIL
+from SMTP.main import SMTP
 from threading import Thread
 from main_menu import Main_Menu
 from login_instructions import Instructions
@@ -185,7 +185,7 @@ class LOGIN_UI:
         try:
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
-            SEND_MAIL(email, password)
+            SMTP(email, password)
             # Store in .termmail directory
             cred = Credentials()
             cred.store_credentials(email, password)
