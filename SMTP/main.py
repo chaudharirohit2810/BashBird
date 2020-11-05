@@ -258,5 +258,4 @@ if __name__ == "__main__":
     #              "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
     # for filepath in filepaths:
     #     print(mimetypes.MimeTypes().guess_type(filepath)[0])
-    SMTP(old_mail, old_pass, debug=True,
-         smtp_server="smtp.gmail.com", ssl_port=587)
+    SMTP(old_mail, old_pass, debug=True)
