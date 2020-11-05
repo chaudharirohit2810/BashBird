@@ -1,8 +1,12 @@
 from menu import Menu
-import curses, os, getpass, sys
+import curses
+import os
+import getpass
+import sys
 from write_mail import Write_Mail_UI
 from show_folders import Show_Folders
 from curses.textpad import rectangle
+from get_credentials import Credentials
 
 
 class Main_Menu:
@@ -13,38 +17,36 @@ class Main_Menu:
 
     '''
 
-    #<!---------------------------------------------------Variables------------------------------------------------>
-    __menu_strings = [ "Exit"]
+    # <!---------------------------------------------------Variables------------------------------------------------>
+    __menu_strings = ["Exit"]
     __menu = []
     __stdscr = None
-    #Confirm Email Variables
+    # Confirm Email Variables
     __curr_confirm_index = 0
-    __confirm_menu =["YES", "NO"]
+    __confirm_menu = ["YES", "NO"]
 
-
-    #<!-------------------------------------------------Functions--------------------------------------------------->
+    # <!-------------------------------------------------Functions--------------------------------------------------->
 
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         menu = [{'title': "Write mail", 'Function': Write_Mail_UI, 'args': None}]
-        menu.append({'title': "View mails", 'Function': Show_Folders, 'args': None})
-        menu.append({'title': "Logout", 'Function': self.__set_confirm_email_bar, 'args': "STDSCR_NR"})
+        menu.append(
+            {'title': "View mails", 'Function': Show_Folders, 'args': None})
+        menu.append(
+            {'title': "Logout", 'Function': self.__set_confirm_email_bar, 'args': "STDSCR_NR"})
         for item in self.__menu_strings:
             # Alert: Function will expect first arguement as stdscr for sure
             menu.append({'title': item, 'Function': None, 'args': None})
         self.__menu = menu
-    
 
-
-    
     def __display_bottom_bar_menu(self):
         '''To display UI of confirm email bottom bar for logout'''
 
         h, _ = self.__stdscr.getmaxyx()
-        
+
         start_h = h - 3
         for index, item in enumerate(self.__confirm_menu):
-            
+
             y_pos = start_h + index
             # Check if index is of currently selected item if yes make its background white
             if self.__curr_confirm_index == index:
@@ -55,11 +57,9 @@ class Main_Menu:
 
             if self.__curr_confirm_index == index:
                 self.__stdscr.attroff(curses.color_pair(1))
-        
+
         self.__stdscr.refresh()
 
-    
-    
     def __set_confirm_email_bar(self):
         '''Setup confirm email bar for logout'''
 
@@ -85,11 +85,9 @@ class Main_Menu:
                     # Remove the .env file
                     # Get the environment filepath
                     user = getpass.getuser()
-                    dir_path = '/home/'+user+'/.termmail'
-                    env_path = dir_path + "/.env"
-                    os.remove(env_path)
+                    cred = Credentials()
+                    cred.remote_credentials()
                     sys.exit()
-                    
                 break
 
             self.__display_bottom_bar_menu()

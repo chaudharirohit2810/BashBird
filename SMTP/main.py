@@ -84,7 +84,6 @@ class SMTP:
          data: Body of mail \t
 
         '''
-
         # print('Sending mail..................')
         self.__send_main_from()
         for item in mail_to:
@@ -100,7 +99,6 @@ class SMTP:
             filepaths: Filepaths of attachments
 
         '''
-
         try:
             msg = email.mime.multipart.MIMEMultipart()
             msg['Subject'] = subject
@@ -194,7 +192,6 @@ class SMTP:
         pass_msg = encoded_pass
         code, reply = self.__send_encoded_msg(pass_msg)
         if code == 235:
-            # print('You are logged in')
             pass
         else:
             raise Exception('Invalid username or password')
@@ -255,7 +252,8 @@ if __name__ == "__main__":
     load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png",
-                 "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
-    for filepath in filepaths:
-        print(mimetypes.MimeTypes().guess_type(filepath)[0])
+    # filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png",
+    #              "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
+    # for filepath in filepaths:
+    #     print(mimetypes.MimeTypes().guess_type(filepath)[0])
+    SMTP(old_mail, old_pass, debug=True)

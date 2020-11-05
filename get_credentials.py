@@ -2,6 +2,7 @@ from cryptography.fernet import Fernet
 import getpass
 from dotenv import load_dotenv
 import os
+import sys
 
 
 class Credentials:
@@ -61,7 +62,7 @@ class Credentials:
             env_file.write(credentials)
 
     def store_credentials(self, email, password):
-        '''To store the credentials in .env file'''
+        '''To store the credentials'''
 
         fi = open(self.__env_path, "w+")
         fi.write("EMAIL=" + email + "\n")
@@ -81,6 +82,15 @@ class Credentials:
         encrypted_file_path = os.path.join(self.__dir_path, ".env.encrypted")
         with open(encrypted_file_path, 'wb') as enc:
             enc.write(encrypted)
+
+    def remote_credentials(self):
+        '''To remove credentials on logout'''
+        try:
+            encrypted_file_path = os.path.join(
+                self.__dir_path, ".env.encrypted")
+            os.remove(encrypted_file_path)
+        except:
+            pass
 
 
 if __name__ == "__main__":

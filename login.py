@@ -102,27 +102,28 @@ class LOGIN_UI:
         noc = 40
         editwin = curses.newwin(nol, noc, posy, posx)
         self.__setup_layout(email, password, isPass)
+
         if isPass:
 
             ch = self.__stdscr.getch()
             password = password
             password_asterisk = "*" * len(password)
             editwin.insstr(password_asterisk)
-
             while ch != curses.ascii.BEL:
                 if ch == curses.KEY_BACKSPACE:
                     try:
                         password = password[:-1]
                     except:
                         pass
-                else:
+                elif ch >= 32 and ch <= 127:
                     password += chr(ch)
                 password_asterisk = "*" * len(password)
+
                 editwin.clear()
                 editwin.insstr(password_asterisk)
                 editwin.refresh()
                 ch = self.__stdscr.getch()
-
+            curses.curs_set(0)
             return password
         else:
             curses.curs_set(1)
@@ -181,7 +182,7 @@ class LOGIN_UI:
 
         # Show the authenticating message
         utils.show_status_message(
-            self.__stdscr, "Authenticating", isLoading=True)
+            self.__stdscr, "Authenticating....", isLoading=True)
         try:
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
