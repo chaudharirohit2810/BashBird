@@ -144,7 +144,7 @@ class SMTP:
         self.main_socket = socket(AF_INET, SOCK_STREAM)
         self.main_socket.settimeout(self.__TIMEOUT)
         self.main_socket.connect((self.__HOST, self.__SSL_PORT))
-        self.__ssl_connect()
+        # self.__ssl_connect()
         msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
         code = int(msg[:3])
         if self.__debugging:
@@ -160,6 +160,7 @@ class SMTP:
             print('Saying hello to server')
         message = self.__DEFAULT_HELLO_MSG
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
+        self.__send_encoded_msg("STARTTLS")
 
     def __ssl_connect(self):
         '''Function to connect to smtp server with ssl'''
@@ -256,4 +257,5 @@ if __name__ == "__main__":
     #              "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
     # for filepath in filepaths:
     #     print(mimetypes.MimeTypes().guess_type(filepath)[0])
-    SMTP(old_mail, old_pass, debug=True)
+    SMTP(old_mail, old_pass, debug=True,
+         smtp_server="smtp.office365.com", ssl_port=587)

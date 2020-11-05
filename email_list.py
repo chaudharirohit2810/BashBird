@@ -1,5 +1,7 @@
-import curses, os
-import time, textwrap
+import curses
+import os
+import time
+import textwrap
 from BottomBar import BottomBar
 from loading import Loading
 from dotenv import load_dotenv
@@ -18,15 +20,14 @@ class EMAIL_LIST:
     stdscr: Standard screen of curses \t
     directory_name: Name of mailbox from which mails are fetched \t
     imap: object of imap class 
-    
+
     '''
 
-
-    #<!-------------------------------------------------Variables---------------------------------------------------!>
+    # <!-------------------------------------------------Variables---------------------------------------------------!>
     __stdscr = None
-    __directory_name = "" # Name of mailbox
-    __is_error = False # Check if there is error
-    __imap = None # To store imap variable
+    __directory_name = ""  # Name of mailbox
+    __is_error = False  # Check if there is error
+    __imap = None  # To store imap variable
 
     __curr_position = 0
     __arr_position = 0
@@ -35,7 +36,6 @@ class EMAIL_LIST:
     emails = []
     exception = ""
     __status_msg = ""
-
 
     options = [
         {'key': 'D', 'msg': 'Delete Mail'},
@@ -47,17 +47,15 @@ class EMAIL_LIST:
     __main_list = []
     __display_list = []
 
-    #Confirm Email Variables
+    # Confirm Email Variables
     __curr_confirm_index = 0
     # TODO: Later changes this array to title and function dictionary
-    __confirm_menu =["YES", "NO"]
+    __confirm_menu = ["YES", "NO"]
 
     # Check if emails are getting fetched in separate thread
     __is_fetching_emails = True
-    
 
-
-    #<!------------------------------------------------Functions-----------------------------------------------------!>
+    # <!------------------------------------------------Functions-----------------------------------------------------!>
 
     def __init__(self, stdscr, directory_name, imap):
         # To disable cursor
@@ -81,12 +79,8 @@ class EMAIL_LIST:
             # Refresh the screen
             self.__stdscr.refresh()
 
+    # <!----------------------------------------------- LOGIC -------------------------------------------------------->
 
-
-    #<!----------------------------------------------- LOGIC -------------------------------------------------------->
-
-   
-   
     def __fetch_emails(self):
         '''To fetch emails from imap server using IMAP class'''
 
@@ -100,7 +94,8 @@ class EMAIL_LIST:
             if num == 0:
                 loading.stop()
                 self.__is_error = True
-                msg = "Nothing in " + self.__directory_name[1:-1] + "!! Press 'q' to go back"
+                msg = "Nothing in " + \
+                    self.__directory_name[1:-1] + "!! Press 'q' to go back"
                 utils.show_message(self.__stdscr, msg)
                 return
 
@@ -117,9 +112,9 @@ class EMAIL_LIST:
             # To show the error message
             loading.stop()
             self.__is_error = True
-            utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
-            
-            
+            utils.show_message(
+                self.__stdscr, "Something went wrong! Press 'q' to go back")
+
     def __set_main_layout(self):
         '''To setup the main layout of page with scrollable behaviour'''
 
@@ -133,7 +128,7 @@ class EMAIL_LIST:
             # Loop until key is 'q'
             while key != ord('q'):
                 key = self.__stdscr.getch()
-                
+
                 # If the key pressed is up
                 if key == curses.KEY_UP and self.__arr_position != 0:
                     self.__curr_position -= 1
@@ -164,11 +159,10 @@ class EMAIL_LIST:
                 # When enter is pressed
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     # Show the email info component which will show details of email
-                    EMAIL_INFO(self.__stdscr, 
-                                (self.num - self.__arr_position, self.__main_list[self.__arr_position]['Subject'], 
-                                self.__main_list[self.__arr_position]['From'], self.__main_list[self.__arr_position]['Date']), 
-                            self.__imap)
-                        
+                    EMAIL_INFO(self.__stdscr,
+                               (self.num - self.__arr_position, self.__main_list[self.__arr_position]['Subject'],
+                                self.__main_list[self.__arr_position]['From'], self.__main_list[self.__arr_position]['Date']),
+                               self.__imap)
 
                 # Calculate the end of display list
                 arr_end = min(arr_start + max_len, len(self.__main_list))
@@ -177,16 +171,16 @@ class EMAIL_LIST:
                 self.__display_list = self.__main_list[arr_start:arr_end]
                 max_len = max(self.__set_email_list(), max_len)
         except:
-            utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
+            utils.show_message(
+                self.__stdscr, "Something went wrong! Press 'q' to go back")
 
+    # <!-------------------------------------------------EMAIL LIST UI --------------------------------------------->
 
-    #<!-------------------------------------------------EMAIL LIST UI --------------------------------------------->        
-    
-    
     # Arguements:
     # list: List of emails
     # isConfirm: If the bottom bar is confirm bottom bar menu or not
-    def __set_email_list(self,isConfirm=False):
+
+    def __set_email_list(self, isConfirm=False):
         '''To show the list of emails'''
 
         try:
@@ -205,15 +199,14 @@ class EMAIL_LIST:
 
             # Loop over the list until the screen or list is ended
             while start < h - 5 and i < len(self.__display_list):
-                # Check if the list item is focused 
+                # Check if the list item is focused
                 is_focused = i == self.__curr_position
 
                 # Show the email
                 start = self.__set_mail_item(start, self.__display_list[i]['Subject'],
-                                            self.__display_list[i]['From'],
-                                            self.__display_list[i]['Date'], h, w, is_focused=is_focused)
+                                             self.__display_list[i]['From'],
+                                             self.__display_list[i]['Date'], h, w, is_focused=is_focused)
                 i += 1
-
 
             # Setup the confirm email bottom menu if isConfirm is True
             if isConfirm:
@@ -233,11 +226,9 @@ class EMAIL_LIST:
             # Return the total number of shown emails
             return i
         except:
-            utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
+            utils.show_message(
+                self.__stdscr, "Something went wrong! Press 'q' to go back")
 
-
-
-    
     # Arguements:
     # Subject: Subject of mail
     # mail_From: email of sender
@@ -245,7 +236,8 @@ class EMAIL_LIST:
     # height, width: height and width of screen
     # is_focused: if the email item is focused or not
     # Returns the total height of mail item
-    def __set_mail_item(self, start, subject, mail_from, date, height, width, is_focused=False, is_seen = False):
+
+    def __set_mail_item(self, start, subject, mail_from, date, height, width, is_focused=False, is_seen=False):
         '''To show the single mail item'''
         curses.init_pair(10, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         if is_focused:
@@ -262,7 +254,7 @@ class EMAIL_LIST:
         #     # subject = subject + "This is focused"
         #     self.__stdscr.attron(curses.A_BOLD)
 
-        old_start  = start - 1
+        old_start = start - 1
 
         # Determine start x-position of date
         # TODO: Later also check the end of subject so date can be shifted to new line
@@ -270,7 +262,7 @@ class EMAIL_LIST:
 
         if len(subject.strip()) == 0:
             subject = "(no subject)"
-        
+
         # To show subject
         # First wrap the subject so that it can be shown on newline
         # self.__stdscr.attron(curses.A_BOLD)
@@ -278,11 +270,11 @@ class EMAIL_LIST:
         formatted_subject = wrapper.wrap(subject)
         for index, subject in enumerate(formatted_subject):
             flag = False
-            # If there is more than 1 line 
+            # If there is more than 1 line
             if index == 1:
                 ellipsize = "...."
                 sub_end = min(width - 15, len(subject))
-                # Add ellipses when subject is huge 
+                # Add ellipses when subject is huge
                 if sub_end != len(subject):
                     subject = subject[0:sub_end] + ellipsize
                     # Make flag true to break out of loop
@@ -311,9 +303,6 @@ class EMAIL_LIST:
         # Return the end of layout to show next email
         return start
 
-
-
-    
     def __set_confirm_email_bar(self):
         '''Setup confirm email bar'''
 
@@ -321,9 +310,7 @@ class EMAIL_LIST:
             h, w = self.__stdscr.getmaxyx()
             self.__stdscr.clear()
             self.__set_email_list(isConfirm=True)
-            
 
-            
             while 1:
                 key = self.__stdscr.getch()
 
@@ -335,42 +322,40 @@ class EMAIL_LIST:
                 # TODO: Do the functionality according to choice of user
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     if self.__curr_confirm_index == 0:
-                        utils.show_status_message(self.__stdscr, "Deleting email....", isLoading=True)
+                        utils.show_status_message(
+                            self.__stdscr, "Deleting email....", isLoading=True)
                         try:
-                            num = self.__imap.delete_email(self.num - self.__arr_position)
-                            
+                            num = self.__imap.delete_email(
+                                self.num - self.__arr_position)
 
                             # Set the new mail count
                             self.num = num
 
                             # Update the array
                             self.__main_list.pop(self.__arr_position)
-                            
-                            
+
                             # Show mail sent successfully message
-                            utils.show_status_message(self.__stdscr, "Mail deleted Successfully", time_to_show=1)
+                            utils.show_status_message(
+                                self.__stdscr, "Mail deleted Successfully", time_to_show=1)
                         except Exception as e:
                             utils.show_status_message(self.__stdscr, str(e), 2)
-                    
+
                     self.__set_email_list()
                     break
 
                 self.__set_email_list(isConfirm=True)
         except:
-            utils.show_message(self.__stdscr, "Something went wrong! Press 'q' to go back")
+            utils.show_message(
+                self.__stdscr, "Something went wrong! Press 'q' to go back")
 
-
-
-
-    
     def __display_confirm_bottom_bar_menu(self):
         '''To display confirm email bottom bar'''
-        
+
         h, _ = self.__stdscr.getmaxyx()
-        
+
         start_h = h - 3
         for index, item in enumerate(self.__confirm_menu):
-            
+
             y_pos = start_h + index
             # Check if index is of currently selected item if yes make its background white
             if self.__curr_confirm_index == index:
@@ -381,18 +366,15 @@ class EMAIL_LIST:
 
             if self.__curr_confirm_index == index:
                 self.__stdscr.attroff(curses.color_pair(1))
-        
+
         self.__stdscr.refresh()
 
+    # <!-------------------------------------------------UI Utils---------------------------------------------------->
 
-
-    #<!-------------------------------------------------UI Utils---------------------------------------------------->
-   
     def __setup_bottom_bar(self):
         '''To setup bottom bar'''
 
         BottomBar(self.__stdscr, self.options)
-
 
 
 def main(stdscr):

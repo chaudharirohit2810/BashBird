@@ -4,7 +4,7 @@ import sys
 import getpass
 from curses.textpad import rectangle, Textbox
 from BottomBar import BottomBar
-from SMTP.main import SMTP
+from IMAP.main import IMAP
 from threading import Thread
 from main_menu import Main_Menu
 from login_instructions import Instructions
@@ -178,7 +178,7 @@ class LOGIN_UI:
     # password: Password of user
 
     def __authenticate(self, email, password):
-        '''To Authenticate using SMTP Server'''
+        '''To Authenticate using IMAP Server'''
 
         # Show the authenticating message
         utils.show_status_message(
@@ -186,7 +186,7 @@ class LOGIN_UI:
         try:
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
-            SMTP(email, password)
+            IMAP(email, password)
             # Store in .termmail directory
             cred = Credentials()
             cred.store_credentials(email, password)
