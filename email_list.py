@@ -95,7 +95,8 @@ class EMAIL_LIST:
                 loading.stop()
                 self.__is_error = True
                 msg = "Nothing in " + \
-                    self.__directory_name[1:-1] + "!! Press 'q' to go back"
+                    self.__directory_name.replace(
+                        '"', '') + "!! Press 'q' to go back"
                 utils.show_message(self.__stdscr, msg)
                 return
 

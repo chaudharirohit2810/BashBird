@@ -48,6 +48,11 @@ class IMAP:
             'domain': 'coep.ac.in',
             'imap_server': 'outlook.office365.com',
             'port': 993
+        },
+        {
+            'domain': 'outlook.com',
+            'imap_server': 'outlook.office365.com',
+            'port': 993
         }
     ]
 
