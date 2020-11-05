@@ -1,6 +1,7 @@
 from curses.textpad import rectangle
 import textwrap
-import curses, utils
+import curses
+import utils
 from BottomBar import BottomBar
 
 
@@ -38,14 +39,12 @@ class Instructions:
 
     __screen_size_msg = "Screen size is too small! Please increase screen size"
 
-
     # <!----------------------------------------------Functions----------------------------------------------------->
+
     def __init__(self, stdscr):
         self.__stdscr = stdscr
         self.__set_main_layout()
 
-
-   
     def __set_main_layout(self):
         '''Main function which setups the layout'''
 
@@ -55,7 +54,7 @@ class Instructions:
             h, w = self.__stdscr.getmaxyx()
 
             try:
-                
+
                 wrapper = textwrap.TextWrapper(width=w - 3)
                 self.__stdscr.clear()
                 utils.set_title(self.__stdscr, "LOGIN INSTRUCTIONS")
@@ -77,14 +76,13 @@ class Instructions:
                     self.__stdscr.addstr(y_pos, x_pos, msg)
                 self.__stdscr.refresh()
 
-
-    
     # Arguements:
     # wrapper: Textwrap wrapper to wrap the text
     # width: Width of the screen
     # st: Start of text
     # text: Text to show
     # title: Title of text
+
     def __setup_array_text(self, wrapper, width, st, text, title):
         '''To set up the text '''
 
