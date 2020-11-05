@@ -20,8 +20,17 @@ Terminal based email client using socket programming in python to connect to IMA
 
 #### Installing:
 
-1. Run **`pip3 install -r requirements.txt`** to install all the required dependencies
-2. Start using the app by running **`python3 termmail.py`**
+1. Install all the required dependencies:
+    ```sh
+    pip3 install -r requirements.txt
+    ```
+
+#### Usage:
+
+1. Start using the app:
+    ```sh
+    python3 termmail.py
+    ```
 
 #### Instructions:
 
