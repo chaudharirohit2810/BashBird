@@ -38,7 +38,7 @@ class Show_Folders:
             options = []
             for item in folders:
                 options.append(
-                    {'title': item[1:-1], 'Function': EMAIL_LIST, 'args': (item, imap)})
+                    {'title': item.replace('"', ''), 'Function': EMAIL_LIST, 'args': (item, imap)})
             options.append({'title': "Back", 'Function': None, 'args': None})
             loading.stop()
             Menu(self.__stdscr, options, "Folders")

@@ -37,28 +37,48 @@ class IMAP:
     __email = ""
     __password = ""
 
-    # Default Messages
+    # Stores the imap server address and port for each domain
+    __HOST_EMAIL_PAIR = [
+        {
+            'domain': 'gmail.com',
+            'imap_server': 'imap.gmail.com',
+            'port': 993
+        },
+        {
+            'domain': 'coep.ac.in',
+            'imap_server': 'outlook.office365.com',
+            'port': 993
+        },
+        {
+            'domain': 'outlook.com',
+            'imap_server': 'outlook.office365.com',
+            'port': 993
+        }
+    ]
 
     __AUTH_MSG = "a01 LOGIN"  # Authentication message
     __MAIL_NEW_LINE = "\r\n"
 
-    # TODO: Create a dictionary of imap servers and port numbers
     __SSL_PORT = 993  # Port for gmail imap server
-    __HOST = ''
+    __HOST = 'imap.gmail.com'
     __TIMEOUT = 15  # 15 seconds for now
-
-    # Dictionary keys
-    __success = 'success'
-    __msg = 'msg'
 
     __debugging = False
 
     # <-----------------------------------------------------Constructor------------------------------------------>
 
-    def __init__(self, email, password, imap_server="imap.gmail.com", debugging=False):
+    def __init__(self, email, password, debugging=False):
         self.__email = email
         self.__password = password
-        self.__HOST = imap_server
+        email_domain = email.split('@')[1].lower()
+
+        # Determine host and ssl port using domain name
+        for email in self.__HOST_EMAIL_PAIR:
+            if email['domain'] == email_domain:
+                self.__HOST = email['imap_server']
+                self.__SSL_PORT = email['port']
+                break
+
         self.__debugging = debugging
 
         try:
@@ -126,6 +146,7 @@ class IMAP:
         send = 'a02 LIST "" "*"'
         self.__main_socket.settimeout(2)
         code, msg = self.__send_encoded_msg(send)
+
         self.__main_socket.settimeout(self.__TIMEOUT)
         if code != "OK":
             raise Exception("Not able to fetch mailboxes")
@@ -222,12 +243,14 @@ class IMAP:
             command = "a02 FETCH " + str(start - count) + ":" + str(start) + \
                 " (FLAGS BODY[HEADER.FIELDS (DATE SUBJECT FROM)])" + \
                 self.__MAIL_NEW_LINE
+            if self.__debugging:
+                print("Client: ", command)
             self.__main_socket.send(command.encode())
 
             # Get the whole output from server
             # is_attachment is true as no need to check for attachment
             success, msg = self.__get_whole_message()
-            print(msg)
+
             emails = []
             # If the request success then parse the header
             if success:
@@ -235,6 +258,7 @@ class IMAP:
 
                 for index, item in enumerate(msg):
                     decoded_email = self.__decode_mail_headers(item)
+
                     decoded_email['index'] = start - count + index
                     emails.insert(0, decoded_email)
 
@@ -290,6 +314,7 @@ class IMAP:
             self.__main_socket.send(command_body.encode())
             # As attachment is not required
             success, msg = self.__get_whole_message()
+
             if success:
                 main = '\n'.join(line for line in msg.splitlines()[
                                  1:-1]).strip('\r\t\n')
@@ -308,7 +333,9 @@ class IMAP:
                     pass
 
                 main = self.__extract_text_from_html(main)
+
                 temp_body = ""
+                main = main.replace("=20", "")
                 for line in main.splitlines():
                     try:
 
@@ -318,6 +345,7 @@ class IMAP:
                         pass
                     temp_body += formatted_line + "\n"
                 main = temp_body.strip('\r\t\n')
+                main = main.replace("=\n", "")
 
                 return {
                     'body': main,
@@ -343,10 +371,11 @@ class IMAP:
         try:
             self.__main_socket.send(command_body.encode())
             success, msg = self.__get_whole_message()
+            msg = msg.lower()
             if not success:
                 raise Exception("Something went wrong")
             filenames = []
-            key = '"FILENAME"'
+            key = '"filename"'
             res = [i for i in range(len(msg)) if msg.startswith(key, i)]
             for i in res:
                 temp = msg[i:]
@@ -496,6 +525,7 @@ class IMAP:
                             reply += self.__MAIL_NEW_LINE
                     # Return them
                     return True, reply
+
                 msg += temp_msg
             except Exception as e:
                 print(e)
@@ -515,7 +545,7 @@ class IMAP:
         index = 0
         while index < len(lines_arr):
             # This indicates the end of particular mail
-            if lines_arr[index] == "" and lines_arr[index + 1] == ")":
+            if lines_arr[index] == "":
                 email = ""
                 for item in lines_arr[prev_start + 1:index]:
                     email += item + "\n"
@@ -716,7 +746,7 @@ class IMAP:
                 if end_index == -1:
                     name = name[:-1]
                 else:
-                    name = name[:-2]
+                    name = name[:end_index]
                 return True, name
         return False, "File does not exits"
 
@@ -763,7 +793,9 @@ if __name__ == "__main__":
     old_pass = os.getenv('PASSWORD')
     imap = IMAP(old_mail, old_pass, debugging=True)
     folders = imap.get_mailboxes()
-
     # print(folders)
-    num = imap.select_mailbox(folders[0])
+    num = imap.select_mailbox(folders[10])
+    # headers = imap.fetch_email_headers(num, count=2)
+    # print(headers)
     result = imap.fetch_text_body(num - 5)
+    # print(result)

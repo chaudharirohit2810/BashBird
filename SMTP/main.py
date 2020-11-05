@@ -31,7 +31,7 @@ class SMTP:
     main_socket = None
 
     # SMTP Protocol messages to connect to smtp server
-    __DEFAULT_HELLO_MSG = "EHLO Rohita"
+    __DEFAULT_HELLO_MSG = "EHLO Rohit"
     __AUTH_MSG = "AUTH LOGIN"
     __MAIL_FROM = "MAIL FROM: "
     __RCPT_TO = "RCPT TO: "
@@ -158,8 +158,10 @@ class SMTP:
 
         if self.__debugging:
             print('Saying hello to server')
-        message = self.__DEFAULT_HELLO_MSG
+
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
+        # self.__send_encoded_msg("STARTTLS")
+        # self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
 
     def __ssl_connect(self):
         '''Function to connect to smtp server with ssl'''
