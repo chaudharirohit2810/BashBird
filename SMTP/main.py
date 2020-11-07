@@ -8,6 +8,7 @@ import email.mime.text
 import email.mime.image
 import email.mime.application
 import mimetypes
+import base64
 
 
 # Public Functions     Functionality
@@ -36,6 +37,7 @@ class SMTP:
     __MAIL_FROM = "MAIL FROM: "
     __RCPT_TO = "RCPT TO: "
     __DATA = "DATA"
+    __STARTTLS = "STARTTLS"
     __MAIL_NEW_LINE = "\r\n"
     __QUIT = "QUIT"
     __END_MSG = "\r\n.\r\n"
@@ -44,13 +46,36 @@ class SMTP:
     __TIMEOUT = 15  # 15 seconds for now
 
     # Port and host to connect to smtp server
-    # TODO: Make a dictionary which stores port and hostname of mail servers like google and outlook
-    __PORT = 587
     __SSL_PORT = 465
     __HOST = ''
 
-    # Utility variable to decide
-    __debugging = False  # whether to print debugging output
+    # Stores the smtp server address and port for each domain
+    __HOST_EMAIL_PAIR = [
+        {
+            'domain': 'gmail.com',
+            'smtp_server': 'smtp.gmail.com',
+            'port': 465,
+            'is_tls': False
+        },
+        {
+            'domain': 'coep.ac.in',
+            'smtp_server': 'outlook.office365.com',
+            'port': 587,
+            'is_tls': True
+        },
+        {
+            'domain': 'outlook.com',
+            'smtp_server': 'outlook.office365.com',
+            'port': 993,
+            'is_tls': True
+        }
+    ]
+
+    # To start the tls if smtp server requires starttls encryption (for outlook)
+    __is_tls = False
+
+    # Utility variable to print debugging output
+    __debugging = False
 
     # email and password
     __email = ""
@@ -58,12 +83,18 @@ class SMTP:
 
     # <-------------------------------------------Functions----------------------------------------------->
 
-    def __init__(self, email, password, smtp_server="smtp.gmail.com", ssl_port=465, debug=False):
+    def __init__(self, email, password, debug=False):
         self.__email = email
         self.__password = password
-        self.__HOST = smtp_server
         self.__debugging = debug
-        self.__SSL_PORT = ssl_port
+        email_domain = email.split('@')[1].lower()
+
+        for email in self.__HOST_EMAIL_PAIR:
+            if email['domain'] == email_domain:
+                self.__HOST = email['smtp_server']
+                self.__SSL_PORT = email['port']
+                self.__is_tls = email['is_tls']
+                break
 
         # Connect to smtp server
         self.__connect()
@@ -144,8 +175,18 @@ class SMTP:
         self.main_socket = socket(AF_INET, SOCK_STREAM)
         self.main_socket.settimeout(self.__TIMEOUT)
         self.main_socket.connect((self.__HOST, self.__SSL_PORT))
-        self.__ssl_connect()
-        msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
+        msg = ""
+
+        # If the smtp server requires starttls encryption (for outlook)
+        if self.__is_tls:
+            msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
+            self.__say_hello()
+            self.__start_tls()
+            self.__ssl_connect()
+        else:
+            self.__ssl_connect()
+            msg = self.main_socket.recv(1024).decode().strip('\r\t\n')
+
         code = int(msg[:3])
         if self.__debugging:
             print(msg)
@@ -160,8 +201,10 @@ class SMTP:
             print('Saying hello to server')
 
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
-        # self.__send_encoded_msg("STARTTLS")
-        # self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
+
+    def __start_tls(self):
+        '''Starting the TLS encryption'''
+        self.__send_encoded_msg(self.__STARTTLS)
 
     def __ssl_connect(self):
         '''Function to connect to smtp server with ssl'''
@@ -254,8 +297,4 @@ if __name__ == "__main__":
     load_dotenv(dotenv_path='./.env')
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
-    # filepaths = ["/home/rohit/Downloads/SIH-certificate.pdf", "/home/rohit/Pictures/tp.png",
-    #              "/home/rohit/Pictures/Unsplash/nice.jpg", "/home/rohit/index.html"]
-    # for filepath in filepaths:
-    #     print(mimetypes.MimeTypes().guess_type(filepath)[0])
     SMTP(old_mail, old_pass, debug=True)
