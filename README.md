@@ -7,8 +7,8 @@ Termmail is terminal based email client that lets you send and view emails from 
 ## Features:
 
 -   Complete **terminal** based experience
--   Authenticate securely using SSL and STARTTLS
 -   Support for gmail, outlook and coep account
+-   Authenticate securely using SSL and STARTTLS
 -   Send emails to multiple recipients.
 -   Add multiple attachments (pdf, zip, images supported)
 -   Multiple mailboxes
@@ -40,6 +40,7 @@ Termmail is terminal based email client that lets you send and view emails from 
 #### Instructions:
 
 1. Use the app in maximize window mode for optimal experience
-2. Follow login instructions page to login using your gmail account
+2. [Check the IMAP](https://support.google.com/mail/answer/7126229?hl=en) is enabled for your gmail account
+3. Follow login instructions page to login using your gmail account
 
 > The app was tested on python version 3.8 and linux environment
