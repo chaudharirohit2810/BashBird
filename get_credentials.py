@@ -25,7 +25,6 @@ class Credentials:
         try:
             open(key_path)
         except Exception as e:
-            print(e)
             key = Fernet.generate_key()
             key_file = open(key_path, 'wb')
             key_file.write(key)
@@ -64,7 +63,7 @@ class Credentials:
     def store_credentials(self, email, password):
         '''To store the credentials'''
 
-        fi = open(self.__env_path, "w+")
+        fi = open(self.__env_path, "w")
         fi.write("EMAIL=" + email + "\n")
         fi.write("PASSWORD=" + password + "\n")
         fi.close()

@@ -199,13 +199,6 @@ class LOGIN_UI:
         except Exception as e:
             utils.show_status_message(self.__stdscr, str(e), time_to_show=3)
 
-    # Arguements:
-    # email : Email of user
-    # password: Password of user
-
-    def __store_in_file(self, email, password):
-        '''To store email and password in separate file'''
-
     # <!------------------------------------------------Utils------------------------------------------------->
     def __is_valid(self, email, password):
         '''Check if email and password are valid'''

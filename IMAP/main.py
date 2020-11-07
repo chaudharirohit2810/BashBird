@@ -770,7 +770,7 @@ class IMAP:
 
         text = ""
         try:
-            soup = BeautifulSoup(body, "lxml")
+            soup = BeautifulSoup(body, "html.parser")
             for extras in soup(['script', 'style']):
                 extras.extract()
             text = soup.get_text()

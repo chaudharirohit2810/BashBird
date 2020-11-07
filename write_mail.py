@@ -146,10 +146,10 @@ class Write_Mail_UI:
                 # If there are more than 3 lines then add elipsize
                 subject = subject[0:w - 10] + elipsize
                 self.__stdscr.addstr(
-                    from_start + from_block_total + 1 + index, 1, subject)
+                    from_start + from_block_total + index, 1, subject)
                 break
             self.__stdscr.addstr(
-                from_start + from_block_total + 1 + index, 1, subject)
+                from_start + from_block_total + index, 1, subject)
 
         # If attachment is present show the block for attachment
         if len(self.__attachments.strip()) != 0:

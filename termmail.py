@@ -18,7 +18,6 @@ def createDirectory(dir_path):
     except FileExistsError as e:
         pass
     except Exception as e:
-        print(e)
         sys.exit()
 
 
@@ -88,6 +87,7 @@ def main(stdscr):
     user = getpass.getuser()
     # Mail directory path
     dir_path = '/home/'+user+'/.termmail'
+    createDirectory(dir_path)
     # Environment file
     env_path = dir_path + "/.env"
     load_dotenv(env_path)

@@ -115,7 +115,7 @@ class SMTP:
          data: Body of mail \t
 
         '''
-        # print('Sending mail..................')
+
         self.__send_main_from()
         for item in mail_to:
             self.__send__RCPT_TO(item.strip())
@@ -196,10 +196,6 @@ class SMTP:
 
     def __say_hello(self):
         '''Saying hello to server to establish connection between client and server'''
-
-        if self.__debugging:
-            print('Saying hello to server')
-
         self.__send_encoded_msg(self.__DEFAULT_HELLO_MSG)
 
     def __start_tls(self):
