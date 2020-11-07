@@ -2,12 +2,13 @@
 
 ## General Info:
 
-Termmail is terminal based email client which lets you send and view emails from terminal. The app is written in python3 and uses socket programming under the hood to connect Gmail IMAP (to receive emails) and SMTP (to send emails) servers.
+Termmail is terminal based email client which lets you send and view emails from terminal. The app is written in python3 and uses socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers.
 
 ## Features:
 
 -   Complete **terminal** based experience
--   Authenticate securely using SSL
+-   Authenticate securely using SSL and STARTTLS
+-   Support for gmail, outlook and coep account
 -   Send emails to multiple recipients.
 -   Add multiple attachments (pdf, zip, images supported)
 -   Multiple mailboxes
