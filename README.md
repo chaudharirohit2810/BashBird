@@ -7,7 +7,7 @@ Termmail is terminal based email client that lets you send and view emails from 
 ## Features:
 
 -   Complete **terminal** based experience
--   Support for gmail, outlook and coep account
+-   Support for gmail, outlook and coep email account
 -   Authenticate securely using SSL and STARTTLS
 -   Send emails to multiple recipients.
 -   Add multiple attachments (pdf, zip, images supported)
