@@ -107,7 +107,8 @@ class EMAIL_INFO:
             # To show the error message
             loading.stop()
             self.__is_error = True
-            self.__show_message("Something went wrong! Press 'q' to go back")
+            msg = "Something went wrong! Press 'q' to go back"
+            self.__show_message(msg)
 
     def __download_attachment(self):
         '''To download attachments in mail'''
