@@ -85,7 +85,7 @@ class IMAP:
             # Connect to imap server
             self.__connect()
         except Exception as e:
-            print(e)
+            raise Exception(e)
 
     # <----------------------------------------------Private functions------------------------------------------->
 
@@ -105,7 +105,7 @@ class IMAP:
         msg = self.__main_socket.recv(1024).decode().strip('\r\n\t')
         if self.__debugging:
             print("Server:", msg)
-        if msg[2:4] != "OK":
+        if msg.split()[1] != "OK":
             raise Exception(
                 "Something Went Wrong! Failed to connect to imap server")
         # Login after connection
@@ -129,6 +129,8 @@ class IMAP:
             " " + self.__password + self.__MAIL_NEW_LINE
         self.__main_socket.send(message.encode('ascii'))
         recv_msg = self.__main_socket.recv(1024).decode().strip('\r\t\n')
+        if self.__debugging:
+            print(recv_msg)
         # Split the lines in received message
         lines_arr = recv_msg.splitlines()
         # Get the last line from received lines and split it
@@ -163,7 +165,7 @@ class IMAP:
             for i in range(index + 1, len(tokens)):
                 name += tokens[i]
                 name += " "
-            # print(name)
+
             if name[:-1] != '"[Gmail]"':
                 folders.append(name[:-1])
         # Return list of folders except last attribute
@@ -188,14 +190,12 @@ class IMAP:
             msg += temp_msg
             flag = False
             for line in temp_msg.splitlines():
-                # print(line)
                 words = line.split()
                 try:
                     if words[1] == "BAD" or words[1] == "NOT":
                         success = False
                         raise Exception("Failed to select mailbox")
                     elif words[1] == "OK" and (words[2] == "[READ-WRITE]" or words[2] == "[READ-ONLY]"):
-                        # print(words)
                         flag = True
                         break
                 except:
@@ -386,7 +386,6 @@ class IMAP:
 
             return filenames
         except Exception as e:
-            print(e)
             return []
 
     def download_attachment(self, index):
@@ -434,7 +433,6 @@ class IMAP:
                     pass
             return msg
         except Exception as e:
-            print(e)
             raise Exception("Failed to download file! Please try again!!")
 
     def delete_email(self, index):
@@ -528,9 +526,6 @@ class IMAP:
 
                 msg += temp_msg
             except Exception as e:
-                print(e)
-                # Return the error if exception occurs
-                # TODO: Later return appropriate message
                 return False, "Request Failed"
 
     # <!------------------------------------------------Base Mail Headers---------------------------------------->
@@ -579,7 +574,6 @@ class IMAP:
 
             return main_text.decode(charset), encoded_words.find("?=") + 3
         except Exception as e:
-            print(e)
             return encoded_words
 
     def __decode_mail_headers(self, msg):
@@ -648,7 +642,6 @@ class IMAP:
         main_mail_from = ""
         # Check if the date is in encoded words syntax
         if mail_from.startswith("=?"):
-            # print(date)
             while mail_from.startswith("=?"):
                 output, ending_index = self.__extract_text_from_encoded_words_syntax(
                     mail_from)
@@ -792,10 +785,7 @@ if __name__ == "__main__":
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
     imap = IMAP(old_mail, old_pass, debugging=True)
-    folders = imap.get_mailboxes()
-    # print(folders)
-    num = imap.select_mailbox(folders[10])
+    # folders = imap.get_mailboxes()
+    # num = imap.select_mailbox(folders[10])
     # headers = imap.fetch_email_headers(num, count=2)
-    # print(headers)
-    result = imap.fetch_text_body(num - 5)
-    # print(result)
+    # result = imap.fetch_text_body(num - 5)

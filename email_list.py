@@ -99,12 +99,9 @@ class EMAIL_LIST:
                         '"', '') + "!! Press 'q' to go back"
                 utils.show_message(self.__stdscr, msg)
                 return
-
             # Fetch atleast 50 mails if total mails are less than that then fetch total number of mails
             count = min(num - 1, 50)
-
             emails = self.__imap.fetch_email_headers(num, count)
-            # TODO: If the request failed then show the error message
             self.__main_list = emails
             self.emails = emails
             # Stop the loading

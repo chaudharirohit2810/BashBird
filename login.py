@@ -184,6 +184,8 @@ class LOGIN_UI:
         utils.show_status_message(
             self.__stdscr, "Authenticating....", isLoading=True)
         try:
+            email = email.strip()
+            password = password.strip()
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
             IMAP(email, password)

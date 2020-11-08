@@ -95,4 +95,4 @@ class Credentials:
 if __name__ == "__main__":
     cred = Credentials()
     cred.store_credentials("Rohit", "Rohit@123")
-    print(cred.get_credentials())
+    # print(cred.get_credentials())
