@@ -347,8 +347,14 @@ class EMAIL_LIST:
                             # Set the new mail count
                             self.__num = num
 
+                            main_list_length = len(self.__main_list)
+
                             # Update the array
                             self.__main_list.pop(self.__arr_position)
+
+                            if main_list_length - 1 == self.__arr_position:
+                                self.__curr_position -= 1
+                                self.__arr_position -= 1
 
                             # Show mail sent successfully message
                             utils.show_status_message(
