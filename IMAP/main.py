@@ -332,6 +332,12 @@ class IMAP:
                 except:
                     pass
 
+                # Try if the string is base64 encoded
+                try:
+                    main = base64.b64decode(main).decode()
+                except Exception as e:
+                    pass
+
                 main = self.__extract_text_from_html(main)
 
                 temp_body = ""
@@ -785,7 +791,7 @@ if __name__ == "__main__":
     old_mail = os.getenv('EMAIL')
     old_pass = os.getenv('PASSWORD')
     imap = IMAP(old_mail, old_pass, debugging=True)
-    # folders = imap.get_mailboxes()
-    # num = imap.select_mailbox(folders[10])
+    folders = imap.get_mailboxes()
+    num = imap.select_mailbox(folders[10])
     # headers = imap.fetch_email_headers(num, count=2)
-    # result = imap.fetch_text_body(num - 5)
+    result = imap.fetch_text_body(num - 6)
