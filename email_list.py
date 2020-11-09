@@ -31,25 +31,25 @@ class EMAIL_LIST:
 
     __curr_position = 0
     __arr_position = 0
-    num = 0
-    count = 0
-    emails = []
-    exception = ""
-    __status_msg = ""
+    __num = 0
+    __fetched_emails = 0
+    __max_len = 20
+    __is_end = False
 
     options = [
-        {'key': 'D', 'msg': 'Delete Mail'},
-        {'key': 'Q', 'msg': 'Go Back'},
+        {'key': 'd', 'msg': 'Delete Mail'},
+        {'key': 'q', 'msg': 'Go Back'},
         {'key': '⇵', 'msg': 'Navigate through emails'},
         {'key': '⏎', 'msg': 'To See Details'},
+        {'key': 'f', 'msg': "fetch more emails"}
     ]
 
     __main_list = []
     __display_list = []
+    emails = []
 
     # Confirm Email Variables
     __curr_confirm_index = 0
-    # TODO: Later changes this array to title and function dictionary
     __confirm_menu = ["YES", "NO"]
 
     # Check if emails are getting fetched in separate thread
@@ -65,7 +65,13 @@ class EMAIL_LIST:
         self.__stdscr = stdscr
         self.__directory_name = directory_name
         self.__imap = imap
+        self.__main_list = []
 
+        self.main()
+
+    # <!----------------------------------------------- LOGIC -------------------------------------------------------->
+
+    def main(self):
         # To fetch emails
         self.__fetch_emails()
 
@@ -79,8 +85,6 @@ class EMAIL_LIST:
             # Refresh the screen
             self.__stdscr.refresh()
 
-    # <!----------------------------------------------- LOGIC -------------------------------------------------------->
-
     def __fetch_emails(self):
         '''To fetch emails from imap server using IMAP class'''
 
@@ -90,7 +94,7 @@ class EMAIL_LIST:
             loading.start()
             # Select particular mailbox
             num = self.__imap.select_mailbox(self.__directory_name)
-            self.num = num
+
             if num == 0:
                 loading.stop()
                 self.__is_error = True
@@ -99,19 +103,27 @@ class EMAIL_LIST:
                         '"', '') + "!! Press 'q' to go back"
                 utils.show_message(self.__stdscr, msg)
                 return
-            # Fetch atleast 50 mails if total mails are less than that then fetch total number of mails
-            count = min(num - 1, 50)
-            emails = self.__imap.fetch_email_headers(num, count)
-            self.__main_list = emails
-            self.emails = emails
-            # Stop the loading
+            self.__num = num
+
+            # Fetch atleast 30 mails if total mails are less than that then fetch total number of mails
+            count = min(self.__num - 1, 30)
+            if (self.__num - self.__fetched_emails) > 0:
+                emails = self.__imap.fetch_email_headers(
+                    self.__num - self.__fetched_emails, count)
+                self.__fetched_emails += count + 1
+                self.__main_list.extend(emails)
+                self.emails = emails
+            else:
+                self.__is_end = True
+
             loading.stop()
         except Exception as e:
             # To show the error message
             loading.stop()
             self.__is_error = True
+            msg = "Something went wrong! Press 'q' to go back"
             utils.show_message(
-                self.__stdscr, "Something went wrong! Press 'q' to go back")
+                self.__stdscr, msg)
 
     def __set_main_layout(self):
         '''To setup the main layout of page with scrollable behaviour'''
@@ -121,7 +133,7 @@ class EMAIL_LIST:
             arr_start = 0
             # Initially setup the list to get maximum mails that can be shown on single page
             self.__display_list = self.__main_list
-            max_len = self.__set_email_list()
+            self.__max_len = self.__set_email_list()
 
             # Loop until key is 'q'
             while key != ord('q'):
@@ -134,8 +146,8 @@ class EMAIL_LIST:
 
                     # if the current position becomes -1 then show previous page.
                     if self.__curr_position == -1:
-                        arr_start = arr_start - max_len
-                        self.__curr_position = max_len - 1
+                        arr_start = arr_start - self.__max_len
+                        self.__curr_position = self.__max_len - 1
 
                 # IF the key pressed is down
                 elif key == curses.KEY_DOWN:
@@ -144,7 +156,7 @@ class EMAIL_LIST:
                         self.__arr_position += 1
 
                         # It the current position becomes max_len then show next page.
-                        if self.__curr_position >= max_len:
+                        if self.__curr_position >= self.__max_len:
                             arr_start = self.__arr_position
 
                             # Again reset the current position
@@ -154,23 +166,36 @@ class EMAIL_LIST:
                 elif key == ord('d'):
                     self.__set_confirm_email_bar()
 
+                # Load next 50 emails
+                elif key == ord('f'):
+                    self.__fetch_emails()
+
                 # When enter is pressed
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     # Show the email info component which will show details of email
                     EMAIL_INFO(self.__stdscr,
-                               (self.num - self.__arr_position, self.__main_list[self.__arr_position]['Subject'],
+                               (self.__num - self.__arr_position, self.__main_list[self.__arr_position]['Subject'],
                                 self.__main_list[self.__arr_position]['From'], self.__main_list[self.__arr_position]['Date']),
                                self.__imap)
 
                 # Calculate the end of display list
-                arr_end = min(arr_start + max_len, len(self.__main_list))
+                arr_end = min(arr_start + self.__max_len,
+                              len(self.__main_list))
 
                 # Show the email list
                 self.__display_list = self.__main_list[arr_start:arr_end]
-                max_len = max(self.__set_email_list(), max_len)
-        except:
+                self.__max_len = max(self.__set_email_list(), self.__max_len)
+
+                # Show the message if there are no more mails fetched
+                if self.__is_end:
+                    utils.show_status_message(
+                        self.__stdscr, "No more emails available to fetch!!", time_to_show=2)
+                    self.__is_end = False
+
+        except Exception as e:
+            msg = "Something went wrong! Press 'q' to go back"
             utils.show_message(
-                self.__stdscr, "Something went wrong! Press 'q' to go back")
+                self.__stdscr, msg)
 
     # <!-------------------------------------------------EMAIL LIST UI --------------------------------------------->
 
@@ -246,16 +271,9 @@ class EMAIL_LIST:
         mail_from = "From: " + mail_from
         formatted_date = "Date: " + date
 
-        # if the mail item is focused then make that a bold
-        # TODO: Use different method to focus email as bold need to used for non-read mails
-        # if is_focused:
-        #     # subject = subject + "This is focused"
-        #     self.__stdscr.attron(curses.A_BOLD)
-
         old_start = start - 1
 
         # Determine start x-position of date
-        # TODO: Later also check the end of subject so date can be shifted to new line
         date_start = width - len(formatted_date) - 2
 
         if len(subject.strip()) == 0:
@@ -324,13 +342,19 @@ class EMAIL_LIST:
                             self.__stdscr, "Deleting email....", isLoading=True)
                         try:
                             num = self.__imap.delete_email(
-                                self.num - self.__arr_position)
+                                self.__num - self.__arr_position)
 
                             # Set the new mail count
-                            self.num = num
+                            self.__num = num
+
+                            main_list_length = len(self.__main_list)
 
                             # Update the array
                             self.__main_list.pop(self.__arr_position)
+
+                            if main_list_length - 1 == self.__arr_position:
+                                self.__curr_position -= 1
+                                self.__arr_position -= 1
 
                             # Show mail sent successfully message
                             utils.show_status_message(
