@@ -1,8 +1,8 @@
-# TermMail
+# BashBird
 
 ## General Info:
 
-Termmail is terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers.
+BashBird is terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers.
 
 ## Features:
 
