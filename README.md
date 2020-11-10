@@ -48,11 +48,11 @@ BashBird is terminal based email client that lets you send and view emails from 
 ## Screenshots
 
 <div style={display: 'flex'}>
-<img src="Screenshots/1.png" alt="Intro Page" title="Intro Page" width="350"/>
-<img src="Screenshots/2.png" alt="Login Page" title="Login Page" width="350"  />
-<img src="Screenshots/3.png" alt="Main menu Page" title="Main menu Page" width="350"  />
-<img src="Screenshots/4.png" alt="Write mail Page" title="Write mail Page" width="350"  />
-<img src="Screenshots/5.png" alt="Mailboxes Page" title="Mailboxes Page" width="350"  />
-<img src="Screenshots/6.png" alt="Email Page" title="Email Page" width="350"  />
-<img src="Screenshots/7.png" alt="Mail Details Page" title="Mail Details Page" width="350"  />
+<img src="Screenshots/1.png" alt="Intro Page" title="Intro Page" width="475"/>
+<img src="Screenshots/2.png" alt="Login Page" title="Login Page" width="475"  />
+<img src="Screenshots/3.png" alt="Main menu Page" title="Main menu Page" width="475"  />
+<img src="Screenshots/4.png" alt="Write mail Page" title="Write mail Page" width="475"  />
+<img src="Screenshots/5.png" alt="Mailboxes Page" title="Mailboxes Page" width="475"  />
+<img src="Screenshots/6.png" alt="Email Page" title="Email Page" width="475"  />
+<img src="Screenshots/7.png" alt="Mail Details Page" title="Mail Details Page" width="475"  />
 </div>
