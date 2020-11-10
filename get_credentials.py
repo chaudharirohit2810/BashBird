@@ -14,13 +14,13 @@ class Credentials:
     def __init__(self):
         user = getpass.getuser()
 
-        self.__dir_path = os.path.join("/home", user, ".termmail")
+        self.__dir_path = os.path.join("/home", user, ".bashbird")
         self.__env_path = os.path.join(self.__dir_path, ".env")
 
     def __create_key(self):
         '''Create a encryption key if it does not exist'''
 
-        key_file_name = '.termmailkey.key'
+        key_file_name = '.bashbirdkey.key'
         key_path = os.path.join(self.__dir_path, key_file_name)
         try:
             open(key_path)
@@ -33,7 +33,7 @@ class Credentials:
     def __get_key(self):
         '''Get encryption key'''
 
-        key_file_name = '.termmailkey.key'
+        key_file_name = '.bashbirdkey.key'
         key_path = os.path.join(self.__dir_path, key_file_name)
         key = open(key_path, 'rb').read()
         return key

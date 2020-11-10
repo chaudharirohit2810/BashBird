@@ -34,7 +34,7 @@ BashBird is terminal based email client that lets you send and view emails from 
 
 1. Start using the app:
     ```sh
-    python3 main.py
+    python3 bashbird.py
     ```
 
 #### Instructions:

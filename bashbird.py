@@ -43,7 +43,7 @@ def show_main_intro(stdscr):
     # TODO: Solve responsiveness issues
 
     title1 = "**************************************************"
-    title2 = "***** TERMMAIL - TERMINAL BASED EMAIL CLIENT *****"
+    title2 = "***** BASHBIRD - TERMINAL BASED EMAIL CLIENT *****"
     title3 = "**************************************************"
     h, w = stdscr.getmaxyx()
     stdscr.attron(curses.A_BOLD)
@@ -86,7 +86,7 @@ def main(stdscr):
     # Get username
     user = getpass.getuser()
     # Mail directory path
-    dir_path = '/home/'+user+'/.termmail'
+    dir_path = '/home/'+user+'/.bashbird'
     createDirectory(dir_path)
     # Environment file
     env_path = dir_path + "/.env"

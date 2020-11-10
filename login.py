@@ -189,7 +189,7 @@ class LOGIN_UI:
             self.__is_valid(email, password)
             # Authenticate using email and password, it throws exception if something went wrong
             IMAP(email, password)
-            # Store in .termmail directory
+            # Store in .bashbird directory
             cred = Credentials()
             cred.store_credentials(email, password)
             utils.show_status_message(
