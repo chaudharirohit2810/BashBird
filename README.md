@@ -1,8 +1,6 @@
-# BashBird
+<h1 align="center"> BashBird </h1>
 
-## General Info:
-
-BashBird is terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses curses library for frontend and socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers. 
+A terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses curses library for frontend and socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers. 
 
 ## Features:
 
