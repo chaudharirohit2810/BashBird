@@ -46,11 +46,6 @@ A terminal based email client that lets you send and view emails from terminal. 
 ## Screenshots
 
 <div style={display: 'flex'}>
-    <img src="Screenshots/1.png" alt="Intro Page" title="Intro Page"/>
-    <img src="Screenshots/2.png" alt="Login Page" title="Login Page" />
-    <img src="Screenshots/3.png" alt="Main menu Page" title="Main menu Page"/>
     <img src="Screenshots/4.png" alt="Write mail Page" title="Write mail Page"  />
-    <img src="Screenshots/5.png" alt="Mailboxes Page" title="Mailboxes Page"   />
     <img src="Screenshots/6.png" alt="Email Page" title="Email Page"  />
-    <img src="Screenshots/7.png" alt="Mail Details Page" title="Mail Details Page"  />
 </div>
