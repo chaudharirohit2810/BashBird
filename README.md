@@ -29,7 +29,7 @@
 ##  👨🏻‍💻 About The Project
 A terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses curses library for frontend and socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers. 
 
-## :star2: Features
+## 🌟 Features
 
 -   Complete **terminal** based experience
 -   Support for gmail, outlook and coep email account
