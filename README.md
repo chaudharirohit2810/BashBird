@@ -27,7 +27,7 @@
 <img alt="Layout" src="Screenshots/6.png">
 
 ##  👨🏻‍💻 About The Project
-A terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses curses library for frontend and socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers. 
+BashBird is a terminal based email client that lets you send and view emails from terminal. The app is written in python3 and uses curses library for frontend and socket programming under the hood to connect IMAP (to receive emails) and SMTP (to send emails) servers. 
 
 ## 🌟 Features
 
@@ -66,7 +66,7 @@ A terminal based email client that lets you send and view emails from terminal. 
 #### Instructions:
 
 1. Use the app in maximize window mode for optimal experience
-2. [Check the IMAP](https://support.google.com/mail/answer/7126229?hl=en) is enabled for your gmail account
+2. [Check that IMAP](https://support.google.com/mail/answer/7126229?hl=en) is enabled for your gmail account
 3. Follow login instructions page to login using your gmail account
 
 > The app was tested on python version 3.8 and linux environment
